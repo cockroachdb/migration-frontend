@@ -5,8 +5,10 @@ import Col from 'react-bootstrap/Col';
 import Row from 'react-bootstrap/Row';
 import Button from 'react-bootstrap/Button';
 import Spinner from 'react-bootstrap/Spinner';
+import Moment from 'react-moment';
 
 import axios from 'axios';
+
 
 interface Import {
   id: string;
@@ -91,7 +93,13 @@ class App extends React.Component<{}, AppState> {
               {this.state.data.id == '' ? 'Loading database migration....' : this.state.data.id}
             </h1>
             <hr/>
-            <p>{this.state.data.unix_nano != null ? new Date(this.state.data.unix_nano / 1000000).toISOString(): "loading..."}</p>
+            <p>
+              Last executed&nbsp; 
+              {
+                this.state.data.unix_nano != 0 ?
+                  (<Moment date={new Date(this.state.data.unix_nano / 1000000).toISOString()} fromNow />): (<p>loading...</p>)
+              }
+            </p>
           </Container>
         </Container>
 
@@ -131,7 +139,7 @@ class App extends React.Component<{}, AppState> {
         </form>
 
         <hr/>
-        <p>The early 2010s called, they want their Twitter Bootstrap theme back!</p>
+        <p>"The early 2010s called, they want their Twitter Bootstrap theme back!" - Vanessa Ung</p>
       </Container>
     );
   }
