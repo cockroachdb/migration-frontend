@@ -66,7 +66,7 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
   }
 
   componentDidMount() {
-    axios.get<Import>("http://localhost:5050/get", { params: { 'id': this.props.id } }).then(
+    axios.get<Import>("http://" + window.location.hostname + ":5050/get", { params: { 'id': this.props.id } }).then(
       response => {
         this.setState({...this.state, loaded: true, data: response.data});
       }
@@ -79,7 +79,7 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
     event.preventDefault();
     this.setState({...this.state, loaded: false});
     axios.post<Import>(
-      "http://localhost:5050/put",
+      "http://" + window.location.hostname + ":5050/put",
       this.state.data,
     ).then(
       response => {
@@ -181,7 +181,7 @@ function Home(props: {setID: (s: string) => void}) {
     formData.append("file", inputRef.current.files[0]);
     formData.append("id", uploadedFileName);
     axios.post<Import>(
-      "http://localhost:5050/upload",
+      "http://" + window.location.hostname + ":5050/upload",
       formData,
       {
         headers: { "Content-Type": "multipart/form-data" },
