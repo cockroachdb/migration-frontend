@@ -36,12 +36,14 @@ interface ImportIssue {
 
 interface AppState {
   data: Import;
+  loaded: boolean;
 }
 
 class App extends React.Component<{}, AppState> {
   constructor(props: {}) {
     super(props);
     this.state = {
+      loaded: false,
       data: {
         id: '',
         unix_nano: 0,
@@ -63,7 +65,7 @@ class App extends React.Component<{}, AppState> {
   reloadPage() {
     axios.get<Import>("http://localhost:5050/get").then(
       response => {
-        this.setState({...this.state, data: response.data});
+        this.setState({...this.state, loaded: true, data: response.data});
       }
     ).catch(
       error => console.error(`Error: ${error}`)
@@ -72,9 +74,10 @@ class App extends React.Component<{}, AppState> {
 
   handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    this.setState({...this.state, loaded: false});
     axios.post<Import>("http://localhost:5050/put", this.state.data).then(
       response => {
-        this.setState({...this.state, data: response.data});
+        this.setState({...this.state, loaded: true, data: response.data});
       }
     ).catch(
       error => console.error(`Error: ${error}`)
@@ -97,20 +100,14 @@ class App extends React.Component<{}, AppState> {
         <Container className="bg-light text-dark p-5" fluid>
           <Container className="bg-light p-5">
             <h1 className="display-4 fw-bold">
-              {this.state.data.id == '' ? 'Loading database migration....' : this.state.data.id}
+              {!this.state.loaded ? 'Loading database migration....' : this.state.data.id}
             </h1>
-            {this.state.data.import_metadata.status != "" ? 
+            {this.state.loaded ? 
               <Alert variant={this.state.data.import_metadata.status}>{this.state.data.import_metadata.message}</Alert>
               : ''
             }
             <hr/>
-            <div>
-              Last executed&nbsp; 
-              {
-                this.state.data.unix_nano != 0 ?
-                  (<Moment date={new Date(this.state.data.unix_nano / 1000000).toISOString()} fromNow />): (<p>loading...</p>)
-              }
-            </div>
+            {this.state.loaded ? <div>Last executed&nbsp;<Moment date={new Date(this.state.data.unix_nano / 1000000).toISOString()} fromNow /></div>: ''}
           </Container>
         </Container>
 
@@ -122,7 +119,7 @@ class App extends React.Component<{}, AppState> {
                 <Col xs={4}><strong>CockroachDB statement</strong></Col>
                 <Col xs={4}><strong>Issues</strong></Col>
               </Row>
-          {this.state.data.import_metadata.statements.length > 0 ? this.state.data.import_metadata.statements.map((statement, idx) => (
+          {this.state.loaded ? this.state.data.import_metadata.statements.map((statement, idx) => (
             <Row key={'r' + idx} className={"m-2 p-2 border " + (statement.issues != null && statement.issues.length > 0 ? 'border-danger': '')}>
               <Col xs={4}>
                 <pre>{statement.original}</pre>
