@@ -115,24 +115,27 @@ class App extends React.Component<{}, AppState> {
           <Button variant="primary" type="submit">Reimport</Button>
           <Container className="p-4" fluid>
               <Row className="m-2 p-2">
-                <Col xs={4}><strong>PostgreSQL statement</strong></Col>
-                <Col xs={4}><strong>CockroachDB statement</strong></Col>
-                <Col xs={4}><strong>Issues</strong></Col>
+                <Col xs={6}><strong>PostgreSQL statement</strong></Col>
+                <Col xs={6}><strong>CockroachDB statement</strong></Col>
               </Row>
           {this.state.loaded ? this.state.data.import_metadata.statements.map((statement, idx) => (
             <Row key={'r' + idx} className={"m-2 p-2 border " + (statement.issues != null && statement.issues.length > 0 ? 'border-danger': '')}>
-              <Col xs={4}>
+              <Col xs={6}>
                 <pre>{statement.original}</pre>
               </Col>
-              <Col xs={4}>
-                    <textarea className="form-control" id={'ta' + idx} value={statement.cockroach} onChange={this.handleTextAreaChange(idx)}/>
-              </Col>
-              <Col xs={4}>
+              <Col xs={6}>
                   <ul>
                     {statement.issues != null && statement.issues.length > 0 ? statement.issues.map((issue, idx) => (
-                        <li key={'li' + idx}>{issue.text}</li>
+                        <li key={'li' + idx} style={{color: 'red'}}>{issue.text}</li>
                     )): ''}
                   </ul>
+                  <textarea
+                    className="form-control"
+                    id={'ta' + idx}
+                    value={statement.cockroach}
+                    placeholder={statement.cockroach.trim() == '' ? '-- statement ignored': ''}
+                    onChange={this.handleTextAreaChange(idx)}
+                  />
               </Col>
             </Row>
           )) : (
