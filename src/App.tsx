@@ -29,13 +29,19 @@ interface ImportIssue {
   text: string;
 }
 
-class App extends React.Component<{}, Import> {
+interface AppState {
+  data: Import;
+}
+
+class App extends React.Component<{}, AppState> {
   constructor(props: {}) {
     super(props);
     this.state = {
-      id: '',
-      unix_nano: 0,
-      import_metadata: {statements: []},
+      data: {
+        id: '',
+        unix_nano: 0,
+        import_metadata: {statements: []},
+      },
     };
     this.handleSubmit = this.handleSubmit.bind(this);
     this.handleTextAreaChange = this.handleTextAreaChange.bind(this);
@@ -48,7 +54,7 @@ class App extends React.Component<{}, Import> {
   reloadPage() {
     axios.get<Import>("http://localhost:5050/get").then(
       response => {
-        this.setState({...response.data});
+        this.setState({...this.state, data: response.data});
       }
     ).catch(
       error => console.error(`Error: ${error}`)
@@ -57,7 +63,13 @@ class App extends React.Component<{}, Import> {
 
   handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    console.log(this.state.import_metadata.statements[0].cockroach);
+    axios.post<Import>("http://localhost:5050/put", this.state.data).then(
+      response => {
+        this.setState({...this.state, data: response.data});
+      }
+    ).catch(
+      error => console.error(`Error: ${error}`)
+    );
   }
 
   handleTextAreaChange(idx: number) {
@@ -65,9 +77,9 @@ class App extends React.Component<{}, Import> {
   }
 
   handleTextAreaChangeForIdx  ( idx: number, event: React.ChangeEvent<HTMLTextAreaElement>) {
-    const newState = this.state
+    const newState = this.state.data;
     newState.import_metadata.statements[idx].cockroach = event.target.value;
-    this.setState(newState);
+    this.setState({...this.state, data: newState});
   }
 
   render() {
@@ -76,10 +88,10 @@ class App extends React.Component<{}, Import> {
         <Container className="bg-light text-dark p-5" fluid>
           <Container className="bg-light p-5">
             <h1 className="display-4 fw-bold">
-              {this.state.id == '' ? 'Loading database migration....' : this.state.id}
+              {this.state.data.id == '' ? 'Loading database migration....' : this.state.data.id}
             </h1>
             <hr/>
-            <p>{new Date(this.state.unix_nano / 1000000).toISOString()}</p>
+            <p>{this.state.data.unix_nano != null ? new Date(this.state.data.unix_nano / 1000000).toISOString(): "loading..."}</p>
           </Container>
         </Container>
 
@@ -91,7 +103,7 @@ class App extends React.Component<{}, Import> {
                 <Col xs={4}><strong>CockroachDB statement</strong></Col>
                 <Col xs={4}><strong>Issues</strong></Col>
               </Row>
-          {this.state.import_metadata.statements.length > 0 ? this.state.import_metadata.statements.map((statement, idx) => (
+          {this.state.data.import_metadata.statements.length > 0 ? this.state.data.import_metadata.statements.map((statement, idx) => (
             <Row className={"m-2 p-2 border " + (statement.issues != null && statement.issues.length > 0 ? 'border-danger': '')}>
               <Col xs={4}>
                 <pre>{statement.original}</pre>
@@ -109,9 +121,9 @@ class App extends React.Component<{}, Import> {
             </Row>
           )) : (
             <Row className="justify-content-md-center">
-                 <Spinner animation="border" role="status">
-                    <span className="visually-hidden">Loading...</span>
-                  </Spinner>
+              <Spinner animation="border" role="status">
+                <span className="visually-hidden">Loading...</span>
+              </Spinner>
             </Row>
             )
           }
