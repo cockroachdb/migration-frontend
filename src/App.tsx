@@ -1,5 +1,6 @@
 import React from 'react';
 
+import Alert from 'react-bootstrap/Alert';
 import Container from 'react-bootstrap/Container';
 import Col from 'react-bootstrap/Col';
 import Row from 'react-bootstrap/Row';
@@ -18,6 +19,8 @@ interface Import {
 
 interface ImportMetadata {
   statements: ImportStatement[];
+  status: string;
+  message: string;
 }
 
 interface ImportStatement {
@@ -42,7 +45,11 @@ class App extends React.Component<{}, AppState> {
       data: {
         id: '',
         unix_nano: 0,
-        import_metadata: {statements: []},
+        import_metadata: {
+          statements: [],
+          status: "",
+          message: "",
+        },
       },
     };
     this.handleSubmit = this.handleSubmit.bind(this);
@@ -92,18 +99,22 @@ class App extends React.Component<{}, AppState> {
             <h1 className="display-4 fw-bold">
               {this.state.data.id == '' ? 'Loading database migration....' : this.state.data.id}
             </h1>
+            {this.state.data.import_metadata.status != "" ? 
+              <Alert variant={this.state.data.import_metadata.status}>{this.state.data.import_metadata.message}</Alert>
+              : ''
+            }
             <hr/>
-            <p>
+            <div>
               Last executed&nbsp; 
               {
                 this.state.data.unix_nano != 0 ?
                   (<Moment date={new Date(this.state.data.unix_nano / 1000000).toISOString()} fromNow />): (<p>loading...</p>)
               }
-            </p>
+            </div>
           </Container>
         </Container>
 
-        <form onSubmit={this.handleSubmit}>
+        <form onSubmit={this.handleSubmit} className="p-2">
           <Button variant="primary" type="submit">Reimport</Button>
           <Container className="p-4" fluid>
               <Row className="m-2 p-2">
@@ -112,7 +123,7 @@ class App extends React.Component<{}, AppState> {
                 <Col xs={4}><strong>Issues</strong></Col>
               </Row>
           {this.state.data.import_metadata.statements.length > 0 ? this.state.data.import_metadata.statements.map((statement, idx) => (
-            <Row className={"m-2 p-2 border " + (statement.issues != null && statement.issues.length > 0 ? 'border-danger': '')}>
+            <Row key={'r' + idx} className={"m-2 p-2 border " + (statement.issues != null && statement.issues.length > 0 ? 'border-danger': '')}>
               <Col xs={4}>
                 <pre>{statement.original}</pre>
               </Col>
