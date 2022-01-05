@@ -6,12 +6,13 @@ import Col from 'react-bootstrap/Col';
 import Row from 'react-bootstrap/Row';
 import Button from 'react-bootstrap/Button';
 import Spinner from 'react-bootstrap/Spinner';
-
+import './App.css';
 import Moment from 'react-moment';
 
 import { useNavigate, BrowserRouter, Route, Routes } from 'react-router-dom';
 
 import axios from 'axios';
+import { valueToNode } from '@babel/types';
 
 
 interface Import {
@@ -100,6 +101,30 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
     this.setState({...this.state, data: newState});
   }
 
+  // react doesn't really like this as it doesn't like raw HTML, TODO figure out something smarter i guess.
+  hyperlinkText(inputText: string) {
+    //URLs starting with http://, https://, or ftp://
+    const replacePattern1 = /(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/gim;
+    return inputText.replace(replacePattern1, '<a href="$1" target="_blank">$1</a>');
+  }
+
+  colorForIssue(issues: ImportIssue[]) {
+    if (issues == null || issues.length == 0) {
+      return null;
+    }
+    console.log(issues);
+    var color = 'info';
+    issues.forEach((value) => {
+      switch (value.type) {
+        case "info":
+          break;
+        default:
+          color = 'danger';
+      }
+    });
+    return color;
+  }
+
   render() {
     return (
       <>
@@ -124,14 +149,14 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
               <Col xs={6}><strong>CockroachDB statement</strong></Col>
             </Row>
             {this.state.loaded ? this.state.data.import_metadata.statements.map((statement, idx) => (
-              <Row key={'r' + idx} className={"m-2 p-2 border " + (statement.issues != null && statement.issues.length > 0 ? 'border-danger': '')}>
+              <Row key={'r' + idx} className={"m-2 p-2 border " + (this.colorForIssue(statement.issues) != null ? 'border-' + this.colorForIssue(statement.issues): '')}>
                 <Col xs={6}>
                   <pre>{statement.original}</pre>
                 </Col>
                 <Col xs={6}>
                     <ul>
                       {statement.issues != null && statement.issues.length > 0 ? statement.issues.map((issue, idx) => (
-                          <li key={'li' + idx} style={{color: 'red'}}>{issue.text}</li>
+                          <li key={'li' + idx} className={"issue-type-" + issue.type}>{issue.text}</li> // TODO: issue type.
                       )): ''}
                     </ul>
                     <textarea
