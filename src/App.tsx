@@ -33,7 +33,7 @@ interface ImportStatement {
 }
 
 interface ImportIssue {
-  type: string;
+  level: string;
   text: string;
 }
 
@@ -132,7 +132,7 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
             </Row>
             {this.state.loaded ?
               this.state.data.import_metadata.statements.map((statement, idx) => (
-                <Statement statement={statement} idx={idx} handleTextAreaChange={this.handleTextAreaChange(idx)} />
+                <Statement key={'r' + idx} statement={statement} idx={idx} handleTextAreaChange={this.handleTextAreaChange(idx)} />
               )) : (
                 <Row className="justify-content-md-center">
                   <Spinner animation="border" role="status">
@@ -163,7 +163,7 @@ function Statement(props: StatementProps) {
     }
     var color = 'info';
     issues.forEach((value) => {
-      switch (value.type) {
+      switch (value.level) {
         case "info":
           break;
         default:
@@ -174,23 +174,23 @@ function Statement(props: StatementProps) {
 }
 
   return (
-    <Row key={'r' + props.idx} className={"m-2 p-2 border " + (colorForIssue(statement.issues) != null ? 'border-' + colorForIssue(statement.issues): '')}>
+    <Row className={"m-2 p-2 border " + (colorForIssue(statement.issues) != null ? 'border-' + colorForIssue(statement.issues): '')}>
       <Col xs={6}>
         <pre>{statement.original}</pre>
       </Col>
       <Col xs={6}>
-          <ul>
-            {statement.issues != null && statement.issues.length > 0 ? statement.issues.map((issue, idx) => (
-                <li key={'li' + idx} className={"issue-type-" + issue.type}>{issue.text}</li> // TODO: issue type.
-            )): ''}
-          </ul>
-          <textarea
-            className="form-control"
-            id={'ta' + props.idx}
-            value={statement.cockroach}
-            placeholder={statement.cockroach.trim() === '' ? '-- statement ignored': ''}
-            onChange={props.handleTextAreaChange}
-          />
+        <ul>
+          {statement.issues != null && statement.issues.length > 0 ? statement.issues.map((issue, idx) => (
+            <li key={'li' + idx} className={"issue-level-" + issue.level}>{issue.text}</li> // TODO: issue type.
+          )): ''}
+        </ul>
+        <textarea
+          className="form-control"
+          id={'ta' + props.idx}
+          value={statement.cockroach}
+          placeholder={statement.cockroach.trim() === '' ? '-- statement ignored': ''}
+          onChange={props.handleTextAreaChange}
+        />
       </Col>
     </Row>
   )
