@@ -12,6 +12,7 @@ import Moment from 'react-moment';
 import { useNavigate, BrowserRouter, Route, Routes } from 'react-router-dom';
 
 import axios from 'axios';
+import { statements } from '@babel/template';
 
 
 interface Import {
@@ -35,6 +36,7 @@ interface ImportStatement {
 interface ImportIssue {
   level: string;
   text: string;
+  type: string;
 }
 
 interface ImportAppState {
@@ -63,6 +65,8 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
     };
     this.handleSubmit = this.handleSubmit.bind(this);
     this.handleTextAreaChange = this.handleTextAreaChange.bind(this);
+    this.handleIssueDelete = this.handleIssueDelete.bind(this);
+    this.deleteAllUnimplemented = this.deleteAllUnimplemented.bind(this);
   }
 
   componentDidMount() {
@@ -100,11 +104,37 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
     this.setState({...this.state, data: newState});
   }
 
+  handleIssueDelete(statementIdx: number, issueIdx: number) {
+    const newState = this.state.data;
+    newState.import_metadata.statements[statementIdx].cockroach = '';
+    newState.import_metadata.statements[statementIdx].issues.splice(issueIdx, 1);
+    this.setState({...this.state, data: newState});
+  }
+
   // react doesn't really like this as it doesn't like raw HTML, TODO figure out something smarter i guess.
   hyperlinkText(inputText: string) {
     //URLs starting with http://, https://, or ftp://
     const replacePattern1 = /(\b(https?|ftp):\/\/[-A-Z0-9+&@#/%?=~_|!:,.;]*[-A-Z0-9+&@#/%=~_|])/gim;
     return inputText.replace(replacePattern1, '<a href="$1" target="_blank">$1</a>');
+  }
+
+  deleteAllUnimplemented(event: React.MouseEvent<HTMLButtonElement>) {
+    // This is bad but w/e.
+    const elems: {
+      statementIdx: number;
+      issueIdx: number;
+    }[] = [];
+    this.state.data.import_metadata.statements.forEach((statement, statementIdx) => {
+      if (statement.issues != null) {
+        statement.issues.forEach((issue, issueIdx) => {
+          if (issue.type === 'unimplemented') {
+            elems.push({statementIdx: statementIdx, issueIdx: issueIdx});
+          }
+        })
+      }
+    })
+    elems.forEach((elem) => this.handleIssueDelete(elem.statementIdx, elem.issueIdx));
+    alert(`${elems.length} statements deleted!`);
   }
 
   render() {
@@ -124,15 +154,21 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
 
         <Container className="p-4" fluid>
           <form onSubmit={this.handleSubmit} className="p-2">
-
             <Button variant="primary" type="submit">Reimport</Button>
+            <Button variant="outline-danger" onClick={this.deleteAllUnimplemented}>Delete all unimplemented statements</Button>
+
             <Row className="m-2 p-2">
               <Col xs={6}><strong>PostgreSQL statement</strong></Col>
               <Col xs={6}><strong>CockroachDB statement</strong></Col>
             </Row>
             {this.state.loaded ?
               this.state.data.import_metadata.statements.map((statement, idx) => (
-                <Statement key={'r' + idx} statement={statement} idx={idx} handleTextAreaChange={this.handleTextAreaChange(idx)} />
+                <Statement 
+                  key={'r' + idx} 
+                  statement={statement} 
+                  idx={idx} 
+                  handleIssueDelete={this.handleIssueDelete} 
+                  handleTextAreaChange={this.handleTextAreaChange(idx)} />
               )) : (
                 <Row className="justify-content-md-center">
                   <Spinner animation="border" role="status">
@@ -151,6 +187,7 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
 interface StatementProps {
   statement: ImportStatement;
   idx: number;
+  handleIssueDelete: (statementIdx: number, issueIdx: number) => void;
   handleTextAreaChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
 }
 
@@ -171,7 +208,11 @@ function Statement(props: StatementProps) {
       }
     });
     return color;
-}
+  }
+
+  const onDelete = (idx: number) => (event: React.MouseEvent<HTMLButtonElement>) => {
+    props.handleIssueDelete(props.idx, idx);
+  };
 
   return (
     <Row className={"m-2 p-2 border " + (colorForIssue(statement.issues) != null ? 'border-' + colorForIssue(statement.issues): '')}>
@@ -181,7 +222,12 @@ function Statement(props: StatementProps) {
       <Col xs={6}>
         <ul>
           {statement.issues != null && statement.issues.length > 0 ? statement.issues.map((issue, idx) => (
-            <li key={'li' + idx} className={"issue-level-" + issue.level}>{issue.text}</li> // TODO: issue type.
+            <li key={'li' + idx} className={"issue-level-" + issue.level}>
+              {issue.text}
+              {issue.type === 'unimplemented' ? (
+                <Button variant="outline-danger" onClick={onDelete(idx)}>Delete Statement</Button>
+              ) : ''}
+            </li>
           )): ''}
         </ul>
         <textarea
