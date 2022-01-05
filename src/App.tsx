@@ -145,9 +145,13 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
             {!this.state.loaded ? 'Loading database migration....' : this.state.data.id}
           </h1>
           {this.state.loaded ? 
-            <Alert variant={this.state.data.import_metadata.status}>{this.state.data.import_metadata.message}</Alert>
+            <>
+              <Alert variant={this.state.data.import_metadata.status}>{this.state.data.import_metadata.message}</Alert>
+              <hr/>
+              <StatementsSummary statements={this.state.data.import_metadata.statements} />
+            </>
             : ''
-          }
+          }          
           <hr/>
           {this.state.loaded ? <div>Last executed&nbsp;<Moment date={new Date(this.state.data.unix_nano / 1000000).toISOString()} fromNow /></div>: ''}
         </Container>
@@ -239,6 +243,35 @@ function Statement(props: StatementProps) {
         />
       </Col>
     </Row>
+  )
+}
+
+function StatementsSummary(props: {statements: ImportStatement[]}) {
+  var numStatements = 0;
+  var numDanger = 0;
+  var numInfo = 0;
+
+  props.statements.forEach((statement) => {
+    numStatements++;
+    if (statement.issues != null) {
+      statement.issues.forEach((issue) => {
+        switch (issue.level) {
+          case "info":
+            numInfo++;
+            break;
+          default:
+            numDanger++;
+        }
+      })
+    }
+  })
+
+  return (
+    <ul>
+      <li>{numStatements} statements found.</li>
+      <li style={numDanger > 0 ? {color: 'red'}: {}}>{numDanger} fixes required.</li>
+      <li style={numInfo > 0 ? {color: 'blue'} : {}}>{numInfo} optional audits.</li>
+    </ul>
   )
 }
 
