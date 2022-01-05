@@ -75,7 +75,7 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
         this.setState({...this.state, loaded: true, data: response.data});
       }
     ).catch(
-      error => console.error(`Error: ${error}`)
+      error => alert(`Error: ${error}`)
     );
   }
 
@@ -90,7 +90,7 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
         this.setState({...this.state, loaded: true, data: response.data});
       }
     ).catch(
-      error => console.error(`Error: ${error}`)
+      error => alert(`Error: ${error}`)
     );
   }
 
@@ -171,8 +171,11 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
                   key={'r' + idx} 
                   statement={statement} 
                   idx={idx} 
-                  handleIssueDelete={this.handleIssueDelete} 
-                  handleTextAreaChange={this.handleTextAreaChange(idx)} />
+                  callbacks={{
+                    handleIssueDelete: this.handleIssueDelete,
+                    handleTextAreaChange: this.handleTextAreaChange(idx),
+                  }}
+                />
               )) : (
                 <Row className="justify-content-md-center">
                   <Spinner animation="border" role="status">
@@ -191,8 +194,10 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
 interface StatementProps {
   statement: ImportStatement;
   idx: number;
-  handleIssueDelete: (statementIdx: number, issueIdx: number) => void;
-  handleTextAreaChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  callbacks: {
+    handleIssueDelete: (statementIdx: number, issueIdx: number) => void;
+    handleTextAreaChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  }
 }
 
 function Statement(props: StatementProps) {
@@ -214,9 +219,8 @@ function Statement(props: StatementProps) {
     return color;
   }
 
-  const onDelete = (idx: number) => (event: React.MouseEvent<HTMLButtonElement>) => {
-    props.handleIssueDelete(props.idx, idx);
-  };
+  const onDelete = (idx: number) =>
+    (event: React.MouseEvent<HTMLButtonElement>) => props.callbacks.handleIssueDelete(props.idx, idx);
 
   return (
     <Row className={"m-2 p-2 border " + (colorForIssue(statement.issues) != null ? 'border-' + colorForIssue(statement.issues): '')}>
@@ -239,7 +243,7 @@ function Statement(props: StatementProps) {
           id={'ta' + props.idx}
           value={statement.cockroach}
           placeholder={statement.cockroach.trim() === '' ? '-- statement ignored': ''}
-          onChange={props.handleTextAreaChange}
+          onChange={props.callbacks.handleTextAreaChange}
         />
       </Col>
     </Row>
@@ -332,9 +336,7 @@ function Home(props: {setID: (s: string) => void}) {
         />
         <button
           onClick={handleUpload}
-          className={`btn btn-outline-${
-            uploadedFileName ? "success" : "primary"
-          }`}
+          className={`btn btn-outline-${uploadedFileName ? "success" : "primary"}`}
         >
           {uploadedFileName ? uploadedFileName : "Upload"}
         </button>
