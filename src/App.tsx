@@ -103,7 +103,7 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
   // react doesn't really like this as it doesn't like raw HTML, TODO figure out something smarter i guess.
   hyperlinkText(inputText: string) {
     //URLs starting with http://, https://, or ftp://
-    const replacePattern1 = /(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/gim;
+    const replacePattern1 = /(\b(https?|ftp):\/\/[-A-Z0-9+&@#/%?=~_|!:,.;]*[-A-Z0-9+&@#/%=~_|])/gim;
     return inputText.replace(replacePattern1, '<a href="$1" target="_blank">$1</a>');
   }
 
@@ -158,7 +158,7 @@ function Statement(props: StatementProps) {
   const statement = props.statement;
 
   const colorForIssue = (issues: ImportIssue[]) => {
-    if (issues == null || issues.length == 0) {
+    if (issues == null || issues.length === 0) {
       return null;
     }
     var color = 'info';
