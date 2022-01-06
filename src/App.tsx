@@ -36,6 +36,7 @@ interface ImportStatement {
 interface ImportIssue {
   level: string;
   text: string;
+  id: string;
   type: string;
 }
 
@@ -67,9 +68,22 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
     this.handleTextAreaChange = this.handleTextAreaChange.bind(this);
     this.handleIssueDelete = this.handleIssueDelete.bind(this);
     this.deleteAllUnimplemented = this.deleteAllUnimplemented.bind(this);
+    this.handleFixSequence = this.handleFixSequence.bind(this);
+    this.fixAllSequences = this.fixAllSequences.bind(this);
+    this.fixAll = this.fixAll.bind(this);
+    this.undoAll = this.undoAll.bind(this);
   }
 
   componentDidMount() {
+    this.refresh();
+  }
+
+  undoAll(event: React.FormEvent<HTMLButtonElement>) {
+    this.refresh();
+  }
+
+  refresh() {
+    this.setState({...this.state, loaded: false});
     axios.get<Import>("http://" + window.location.hostname + ":5050/get", { params: { 'id': this.props.id } }).then(
       response => {
         this.setState({...this.state, loaded: true, data: response.data});
@@ -104,6 +118,24 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
     this.setState({...this.state, data: newState});
   }
 
+  handleFixSequence(statementIdx: number, issueIdentifier: string) {
+    axios.post<ImportStatement>(
+      "http://" + window.location.hostname + ":5050/fix_sequence",
+      {
+        statement: this.state.data.import_metadata.statements[statementIdx],
+        id: issueIdentifier,
+      },
+    ).then(
+      response => {
+        const newState = this.state.data;
+        newState.import_metadata.statements[statementIdx] = response.data;
+        this.setState({...this.state, data: newState});
+      }
+    ).catch(
+      error => alert(`Error: ${error}`)
+    );
+  }
+
   handleIssueDelete(statementIdx: number, issueIdx: number) {
     const newState = this.state.data;
     newState.import_metadata.statements[statementIdx].cockroach = '';
@@ -118,7 +150,11 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
     return inputText.replace(replacePattern1, '<a href="$1" target="_blank">$1</a>');
   }
 
-  deleteAllUnimplemented(event: React.MouseEvent<HTMLButtonElement>) {
+  deleteAllUnimplemented(event: React.MouseEvent<HTMLButtonElement>) {  
+    alert(`${this.deleteAllUnimplementedInternal()} statements deleted!`);
+  }
+
+  deleteAllUnimplementedInternal() {
     // This is bad but w/e.
     const elems: {
       statementIdx: number;
@@ -134,7 +170,38 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
       }
     })
     elems.forEach((elem) => this.handleIssueDelete(elem.statementIdx, elem.issueIdx));
-    alert(`${elems.length} statements deleted!`);
+    return elems.length;
+  }
+
+
+  fixAllSequences(event: React.MouseEvent<HTMLButtonElement>) {
+    alert(`${this.fixAllSequencesInternal()} statements affected!`);
+  }
+
+  fixAllSequencesInternal() {
+    // This is bad but w/e.
+    const elems: {
+      statementIdx: number;
+      id: string;
+    }[] = [];
+    this.state.data.import_metadata.statements.forEach((statement, statementIdx) => {
+      if (statement.issues != null) {
+        statement.issues.forEach((issue) => {
+          if (issue.type === 'sequence') {
+            elems.push({statementIdx: statementIdx, id: issue.id});
+          }
+        })
+      }
+    })
+    elems.forEach((elem) => this.handleFixSequence(elem.statementIdx, elem.id));
+    return elems.length;
+  }
+
+  fixAll(event: React.MouseEvent<HTMLButtonElement>) {
+    var count = 0;
+    count += this.fixAllSequencesInternal();
+    count += this.deleteAllUnimplementedInternal();
+    alert(`${count} total statements affected!`);
   }
 
   render() {
@@ -159,7 +226,10 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
         <Container className="p-4" fluid>
           <form onSubmit={this.handleSubmit} className="p-2">
             <Button variant="primary" type="submit">Reimport</Button>
+            <Button variant="secondary" onClick={this.fixAll}>Fix all!</Button>
             <Button variant="outline-danger" onClick={this.deleteAllUnimplemented}>Delete all unimplemented statements</Button>
+            <Button variant="outline-info" onClick={this.fixAllSequences}>All sequences to UUID</Button>
+            <Button variant="outline-primary" onClick={this.undoAll}>Undo all</Button>
 
             <Row className="m-2 p-2">
               <Col xs={6}><strong>PostgreSQL statement</strong></Col>
@@ -174,6 +244,7 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
                   callbacks={{
                     handleIssueDelete: this.handleIssueDelete,
                     handleTextAreaChange: this.handleTextAreaChange(idx),
+                    handleFixSequence: this.handleFixSequence,
                   }}
                 />
               )) : (
@@ -196,6 +267,7 @@ interface StatementProps {
   idx: number;
   callbacks: {
     handleIssueDelete: (statementIdx: number, issueIdx: number) => void;
+    handleFixSequence: (statementIdx: number, issueIdentifier: string) => void;
     handleTextAreaChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
   }
 }
@@ -221,6 +293,8 @@ function Statement(props: StatementProps) {
 
   const onDelete = (idx: number) =>
     (event: React.MouseEvent<HTMLButtonElement>) => props.callbacks.handleIssueDelete(props.idx, idx);
+  const onFixSequence = (statementIdx: number, issueIdentifier: string) => 
+    (event: React.MouseEvent<HTMLButtonElement>) => props.callbacks.handleFixSequence(statementIdx, issueIdentifier)
 
   return (
     <Row className={"m-2 p-2 border " + (colorForIssue(statement.issues) != null ? 'border-' + colorForIssue(statement.issues): '')}>
@@ -235,6 +309,9 @@ function Statement(props: StatementProps) {
               {issue.type === 'unimplemented' ? (
                 <Button variant="outline-danger" onClick={onDelete(idx)}>Delete Statement</Button>
               ) : ''}
+              {issue.type === "sequence" ? (
+                <Button variant="outline-info" onClick={onFixSequence(props.idx, issue.id)}>Make UUID</Button>
+              ): ''}
             </li>
           )): ''}
         </ul>
