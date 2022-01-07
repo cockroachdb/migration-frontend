@@ -289,6 +289,7 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
                 <Statement 
                   key={'r' + idx} 
                   statement={statement} 
+                  database={this.state.data.import_metadata.database}
                   idx={idx} 
                   callbacks={{
                     handleIssueDelete: this.handleIssueDelete,
@@ -424,6 +425,7 @@ function ExportDialog(props: {onHide: () => void; show: boolean, statements?: Im
 interface StatementProps {
   statement: ImportStatement;
   idx: number;
+  database: string;
   callbacks: {
     handleIssueDelete: (statementIdx: number, issueIdx: number) => void;
     handleFixSequence: (statementIdx: number, issueIdentifier: string) => void;
@@ -487,7 +489,7 @@ function Statement(props: StatementProps) {
         <p>
           <Button variant="outline-primary" onClick={(event: React.MouseEvent<HTMLButtonElement>) => props.callbacks.handleAddStatement(props.idx)}>Insert Statement Before</Button>
           <Button variant="outline-primary" onClick={(event: React.MouseEvent<HTMLButtonElement>) => props.callbacks.handleAddStatement(props.idx + 1)}>Insert Statement After</Button>
-          <Button variant="outline-primary" onClick={(event: React.MouseEvent<HTMLButtonElement>) => props.callbacks.setShowSQLExec(true, statement.cockroach)}>Execute</Button>
+          {props.database !== "" ? <Button variant="outline-primary" onClick={(event: React.MouseEvent<HTMLButtonElement>) => props.callbacks.setShowSQLExec(true, statement.cockroach)}>Execute</Button> : ''}
         </p>
       </Col>
     </Row>
