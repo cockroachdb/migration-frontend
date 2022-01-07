@@ -45,9 +45,9 @@ interface ImportIssue {
 interface ImportAppState {
   data: Import;
   loaded: boolean;
-  show_export: boolean;
-  show_sql_exec: boolean;
-  sql_exec_text: string;
+  showExport: boolean;
+  showSQLExec: boolean;
+  sqlExecText: string;
 }
 
 interface ImportAppProps {
@@ -65,9 +65,9 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
     super(props);
     this.state = {
       loaded: false,
-      show_export: false,
-      show_sql_exec: false,
-      sql_exec_text: '',
+      showExport: false,
+      showSQLExec: false,
+      sqlExecText: '',
       data: {
         id: props.id,
         unix_nano: 0,
@@ -89,6 +89,7 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
     this.undoAll = this.undoAll.bind(this);
     this.setShowExport = this.setShowExport.bind(this);
     this.setShowSQLExec = this.setShowSQLExec.bind(this);
+    this.handleAddStatement = this.handleAddStatement.bind(this);
   }
 
   componentDidMount() {
@@ -221,12 +222,22 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
     alert(`${count} total statements affected!`);
   }
 
-  setShowExport(show_export: boolean) {
-    this.setState({...this.state, show_export: show_export});
+  setShowExport(showExport: boolean) {
+    this.setState({...this.state, showExport: showExport});
   }
 
-  setShowSQLExec(show_sql_exec: boolean) {
-    this.setState({...this.state, show_sql_exec: show_sql_exec});
+  setShowSQLExec(showSQLExec: boolean, text?: string) {
+    this.setState({...this.state, showSQLExec: showSQLExec, sqlExecText: text != null ? text : this.state.sqlExecText});
+  }
+
+  handleAddStatement(idx: number) {
+    const newState = this.state.data;
+    newState.import_metadata.statements.splice(idx, 0, {
+      original: '-- newly added statement',
+      cockroach: '',
+      issues: [],
+    })
+    this.setState({...this.state, data: newState});
   }
 
   render() {
@@ -251,8 +262,8 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
         <Container className="p-4" fluid>
           {this.state.loaded ? 
             <>
-              <ExportDialog show={this.state.show_export} onHide={() => this.setShowExport(false)} statements={this.state.data.import_metadata.statements} />
-              <SQLExecDialog show={this.state.show_sql_exec} onHide={() => this.setShowSQLExec(false)} text={this.state.sql_exec_text} database={this.state.data.import_metadata.database} />
+              <ExportDialog show={this.state.showExport} onHide={() => this.setShowExport(false)} statements={this.state.data.import_metadata.statements} />
+              <SQLExecDialog show={this.state.showSQLExec} onHide={() => this.setShowSQLExec(false)} text={this.state.sqlExecText} database={this.state.data.import_metadata.database} />
             </>
             : ''}
           <form onSubmit={this.handleSubmit} className="p-2">
@@ -283,6 +294,8 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
                     handleIssueDelete: this.handleIssueDelete,
                     handleTextAreaChange: this.handleTextAreaChange(idx),
                     handleFixSequence: this.handleFixSequence,
+                    handleAddStatement: this.handleAddStatement,
+                    setShowSQLExec: this.setShowSQLExec,
                   }}
                 />
               )) : (
@@ -297,16 +310,6 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
         </Container>
       </>
     );
-  }
-}
-
-interface StatementProps {
-  statement: ImportStatement;
-  idx: number;
-  callbacks: {
-    handleIssueDelete: (statementIdx: number, issueIdx: number) => void;
-    handleFixSequence: (statementIdx: number, issueIdentifier: string) => void;
-    handleTextAreaChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
   }
 }
 
@@ -327,6 +330,10 @@ function SQLExecDialog(props: {show: boolean, onHide: () => void, text: string, 
     results: null,
   });
 
+  React.useEffect(() => {
+    setSt({...st, text: props.text});
+  }, [props.text])
+
   const handleTextAreaChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => 
     setSt({...st, text: event.target.value});
 
@@ -344,7 +351,10 @@ function SQLExecDialog(props: {show: boolean, onHide: () => void, text: string, 
   };
 
   return (
-    <Modal show={props.show} onHide={props.onHide}>
+    <Modal show={props.show} onHide={() => {
+      props.onHide();
+      setSt({...st, results: null});
+    }} >
       <Modal.Header closeButton>
         <Modal.Title>Execute Raw SQL</Modal.Title>
       </Modal.Header>
@@ -411,6 +421,18 @@ function ExportDialog(props: {onHide: () => void; show: boolean, statements?: Im
   )
 }
 
+interface StatementProps {
+  statement: ImportStatement;
+  idx: number;
+  callbacks: {
+    handleIssueDelete: (statementIdx: number, issueIdx: number) => void;
+    handleFixSequence: (statementIdx: number, issueIdentifier: string) => void;
+    handleTextAreaChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
+    handleAddStatement: (idx: number) => void;
+    setShowSQLExec: (showSQLExec: boolean, text?: string) => void;
+  }
+}
+
 function Statement(props: StatementProps) {
   const statement = props.statement;
 
@@ -461,6 +483,12 @@ function Statement(props: StatementProps) {
           placeholder={statement.cockroach.trim() === '' ? '-- statement ignored': ''}
           onChange={props.callbacks.handleTextAreaChange}
         />
+
+        <p>
+          <Button variant="outline-primary" onClick={(event: React.MouseEvent<HTMLButtonElement>) => props.callbacks.handleAddStatement(props.idx)}>Insert Statement Before</Button>
+          <Button variant="outline-primary" onClick={(event: React.MouseEvent<HTMLButtonElement>) => props.callbacks.handleAddStatement(props.idx + 1)}>Insert Statement After</Button>
+          <Button variant="outline-primary" onClick={(event: React.MouseEvent<HTMLButtonElement>) => props.callbacks.setShowSQLExec(true, statement.cockroach)}>Execute</Button>
+        </p>
       </Col>
     </Row>
   )
