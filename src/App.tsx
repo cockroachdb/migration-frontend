@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { ReactHTML } from 'react';
 
 import Alert from 'react-bootstrap/Alert';
 import Container from 'react-bootstrap/Container';
@@ -7,6 +7,7 @@ import Row from 'react-bootstrap/Row';
 import Button from 'react-bootstrap/Button';
 import Spinner from 'react-bootstrap/Spinner';
 import Modal from 'react-bootstrap/Modal';
+import Table from 'react-bootstrap/Table';
 import './App.css';
 import Moment from 'react-moment';
 
@@ -25,6 +26,7 @@ interface ImportMetadata {
   statements: ImportStatement[];
   status: string;
   message: string;
+  database: string;
 }
 
 interface ImportStatement {
@@ -44,10 +46,18 @@ interface ImportAppState {
   data: Import;
   loaded: boolean;
   show_export: boolean;
+  show_sql_exec: boolean;
+  sql_exec_text: string;
 }
 
 interface ImportAppProps {
   id: string;  
+}
+
+interface SQLResponse {
+  columns: string[];
+  rows: string[][];
+  error: string;
 }
 
 class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
@@ -56,6 +66,8 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
     this.state = {
       loaded: false,
       show_export: false,
+      show_sql_exec: false,
+      sql_exec_text: '',
       data: {
         id: props.id,
         unix_nano: 0,
@@ -63,6 +75,7 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
           statements: [],
           status: "",
           message: "",
+          database: "",
         },
       },
     };
@@ -75,6 +88,7 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
     this.fixAll = this.fixAll.bind(this);
     this.undoAll = this.undoAll.bind(this);
     this.setShowExport = this.setShowExport.bind(this);
+    this.setShowSQLExec = this.setShowSQLExec.bind(this);
   }
 
   componentDidMount() {
@@ -211,6 +225,10 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
     this.setState({...this.state, show_export: show_export});
   }
 
+  setShowSQLExec(show_sql_exec: boolean) {
+    this.setState({...this.state, show_sql_exec: show_sql_exec});
+  }
+
   render() {
     return (
       <>
@@ -231,14 +249,20 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
         </Container>
 
         <Container className="p-4" fluid>
-          {this.state.loaded ? <ExportDialog show={this.state.show_export} onHide={() => this.setShowExport(false)} statements={this.state.data.import_metadata.statements} />: ''}
+          {this.state.loaded ? 
+            <>
+              <ExportDialog show={this.state.show_export} onHide={() => this.setShowExport(false)} statements={this.state.data.import_metadata.statements} />
+              <SQLExecDialog show={this.state.show_sql_exec} onHide={() => this.setShowSQLExec(false)} text={this.state.sql_exec_text} database={this.state.data.import_metadata.database} />
+            </>
+            : ''}
           <form onSubmit={this.handleSubmit} className="p-2">
             {this.state.loaded ?
               <>
                 <Button variant="primary" type="submit">Reimport</Button>
                 <Button variant="secondary" onClick={(event: React.MouseEvent<HTMLButtonElement>) => this.setShowExport(true)}>Export</Button>
+                {this.state.data.import_metadata.database != '' ? <Button variant="outline-secondary" onClick={(event: React.MouseEvent<HTMLButtonElement>) => this.setShowSQLExec(true)}>Execute SQL</Button>: ''}
                 <br/>
-                <Button variant="secondary" onClick={this.fixAll}>Fix all</Button>
+                <Button variant="outline-secondary" onClick={this.fixAll}>Fix all</Button>
                 <Button variant="outline-danger" onClick={this.deleteAllUnimplemented}>Delete all unimplemented statements</Button>
                 <Button variant="outline-info" onClick={this.fixAllSequences}>All sequences to UUID</Button>
                 <br/>
@@ -286,6 +310,82 @@ interface StatementProps {
   }
 }
 
+interface SQLExecResults {
+  columns: string[];
+  rows: string[][];
+  error: string;
+}
+
+interface SQLExecState {
+  results: SQLExecResults | null;
+  text: string;
+}
+
+function SQLExecDialog(props: {show: boolean, onHide: () => void, text: string, database: string}) {
+  const [st, setSt] = React.useState<SQLExecState>({
+    text: props.text,
+    results: null,
+  });
+
+  const handleTextAreaChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => 
+    setSt({...st, text: event.target.value});
+
+  const handleExecute = (event: React.MouseEvent<HTMLButtonElement>) => {
+    axios.post<SQLExecResults>(
+      "http://" + window.location.hostname + ":5050/sql",
+      {database: props.database, sql: st.text},
+    ).then(
+      response => {
+        setSt({...st, results: response.data});
+      }
+    ).catch(
+      error => alert(`Error: ${error}`)
+    );
+  };
+
+  return (
+    <Modal show={props.show} onHide={props.onHide}>
+      <Modal.Header closeButton>
+        <Modal.Title>Execute Raw SQL</Modal.Title>
+      </Modal.Header>
+
+      <Modal.Body>
+        <p>This statement will execute on the temporarily created database. It is not persisted.</p>
+        <textarea
+          value={st.text}
+          style={{width: '100%'}}
+          onChange={handleTextAreaChange}
+        />
+        <br/>
+        <Button variant="primary" onClick={handleExecute}>Execute</Button>
+        {st.results != null ?
+          <>
+            <hr/>
+            {st.results.error != "" ? <p>Error: {st.results.error}</p> : st.results.columns != null ? 
+            <Table striped bordered hover>
+              <thead>
+                <tr>
+                  {st.results.columns.map((c) => <th>{c}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {st.results.rows.map((row) => 
+                  <tr>
+                    {row.map((c) => <td>{c}</td>)}
+                  </tr>
+                )}
+              </tbody>
+            </Table>
+            : 'statement executed successfully'
+            }
+          </>
+          : ''
+        }
+      </Modal.Body>
+    </Modal>
+  )
+}
+
 function ExportDialog(props: {onHide: () => void; show: boolean, statements?: ImportStatement[]}) {
   return (
     <Modal show={props.show} onHide={props.onHide}>
@@ -307,11 +407,6 @@ function ExportDialog(props: {onHide: () => void; show: boolean, statements?: Im
           </pre>: ''
         }
       </Modal.Body>
-
-      <Modal.Footer>
-        <Button variant="secondary">Close</Button>
-        <Button variant="primary">Save changes</Button>
-      </Modal.Footer>
     </Modal>
   )
 }
