@@ -225,12 +225,15 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
 
         <Container className="p-4" fluid>
           <form onSubmit={this.handleSubmit} className="p-2">
-            <Button variant="primary" type="submit">Reimport</Button>
-            <Button variant="secondary" onClick={this.fixAll}>Fix all!</Button>
-            <Button variant="outline-danger" onClick={this.deleteAllUnimplemented}>Delete all unimplemented statements</Button>
-            <Button variant="outline-info" onClick={this.fixAllSequences}>All sequences to UUID</Button>
-            <Button variant="outline-primary" onClick={this.undoAll}>Undo all</Button>
-
+            {this.state.loaded ?
+              <>
+                <Button variant="primary" type="submit">Reimport</Button>
+                <Button variant="secondary" onClick={this.fixAll}>Fix all!</Button>
+                <Button variant="outline-danger" onClick={this.deleteAllUnimplemented}>Delete all unimplemented statements</Button>
+                <Button variant="outline-info" onClick={this.fixAllSequences}>All sequences to UUID</Button>
+                <Button variant="outline-primary" onClick={this.undoAll}>Undo all</Button>
+              </> : ''
+            }
             <Row className="m-2 p-2">
               <Col xs={6}><strong>PostgreSQL statement</strong></Col>
               <Col xs={6}><strong>CockroachDB statement</strong></Col>
