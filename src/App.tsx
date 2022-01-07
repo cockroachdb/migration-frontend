@@ -6,13 +6,13 @@ import Col from 'react-bootstrap/Col';
 import Row from 'react-bootstrap/Row';
 import Button from 'react-bootstrap/Button';
 import Spinner from 'react-bootstrap/Spinner';
+import Modal from 'react-bootstrap/Modal';
 import './App.css';
 import Moment from 'react-moment';
 
 import { useNavigate, BrowserRouter, Route, Routes } from 'react-router-dom';
 
 import axios from 'axios';
-import { statements } from '@babel/template';
 
 
 interface Import {
@@ -43,6 +43,7 @@ interface ImportIssue {
 interface ImportAppState {
   data: Import;
   loaded: boolean;
+  show_export: boolean;
 }
 
 interface ImportAppProps {
@@ -54,6 +55,7 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
     super(props);
     this.state = {
       loaded: false,
+      show_export: false,
       data: {
         id: props.id,
         unix_nano: 0,
@@ -72,6 +74,7 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
     this.fixAllSequences = this.fixAllSequences.bind(this);
     this.fixAll = this.fixAll.bind(this);
     this.undoAll = this.undoAll.bind(this);
+    this.setShowExport = this.setShowExport.bind(this);
   }
 
   componentDidMount() {
@@ -204,6 +207,10 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
     alert(`${count} total statements affected!`);
   }
 
+  setShowExport(show_export: boolean) {
+    this.setState({...this.state, show_export: show_export});
+  }
+
   render() {
     return (
       <>
@@ -224,13 +231,17 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
         </Container>
 
         <Container className="p-4" fluid>
+          {this.state.loaded ? <ExportDialog show={this.state.show_export} onHide={() => this.setShowExport(false)} statements={this.state.data.import_metadata.statements} />: ''}
           <form onSubmit={this.handleSubmit} className="p-2">
             {this.state.loaded ?
               <>
                 <Button variant="primary" type="submit">Reimport</Button>
-                <Button variant="secondary" onClick={this.fixAll}>Fix all!</Button>
+                <Button variant="secondary" onClick={(event: React.MouseEvent<HTMLButtonElement>) => this.setShowExport(true)}>Export</Button>
+                <br/>
+                <Button variant="secondary" onClick={this.fixAll}>Fix all</Button>
                 <Button variant="outline-danger" onClick={this.deleteAllUnimplemented}>Delete all unimplemented statements</Button>
                 <Button variant="outline-info" onClick={this.fixAllSequences}>All sequences to UUID</Button>
+                <br/>
                 <Button variant="outline-primary" onClick={this.undoAll}>Undo all</Button>
               </> : ''
             }
@@ -273,6 +284,36 @@ interface StatementProps {
     handleFixSequence: (statementIdx: number, issueIdentifier: string) => void;
     handleTextAreaChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
   }
+}
+
+function ExportDialog(props: {onHide: () => void; show: boolean, statements?: ImportStatement[]}) {
+  return (
+    <Modal show={props.show} onHide={props.onHide}>
+      <Modal.Header closeButton>
+        <Modal.Title>Raw Export</Modal.Title>
+      </Modal.Header>
+
+      <Modal.Body>
+        {props.statements != null ? 
+          <pre>
+            {props.statements.map((statement) => {
+              const pg = statement.original;
+              pg.trim();
+              pg.replace(/(\r\n|\n|\r)/gm, ' ');
+              const crdb = statement.cockroach;
+              crdb.trim()
+              return '-- postgres: ' + pg + '\n' + crdb + '\n\n'
+            })}
+          </pre>: ''
+        }
+      </Modal.Body>
+
+      <Modal.Footer>
+        <Button variant="secondary">Close</Button>
+        <Button variant="primary">Save changes</Button>
+      </Modal.Footer>
+    </Modal>
+  )
 }
 
 function Statement(props: StatementProps) {
