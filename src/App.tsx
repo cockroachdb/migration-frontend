@@ -216,10 +216,10 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
   }
 
   fixAll(event: React.MouseEvent<HTMLButtonElement>) {
-    var count = 0;
-    count += this.fixAllSequencesInternal();
-    count += this.deleteAllUnimplementedInternal();
-    alert(`${count} total statements affected!`);
+    var text = '';
+    text += `${this.fixAllSequencesInternal()} sequences converted to UUID\n`;
+    text += `${this.deleteAllUnimplementedInternal()} unimplemented statements deleted\n`;
+    alert(text);
   }
 
   setShowExport(showExport: boolean) {
@@ -361,7 +361,7 @@ function SQLExecDialog(props: {show: boolean, onHide: () => void, text: string, 
       </Modal.Header>
 
       <Modal.Body>
-        <p>This statement will execute on the temporarily created database. It is not persisted.</p>
+        <p>This statement will execute on the temporarily created database. It will not be part of the import.</p>
         <textarea
           value={st.text}
           style={{width: '100%'}}
