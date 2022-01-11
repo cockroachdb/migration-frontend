@@ -351,15 +351,20 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
             </form>
         </Container>
 
-        <footer className="sticky-footer">
-          {this.state.loaded ?
-            <p>
-              <Button variant="primary" onClick={this.handleSubmit}>Reimport</Button>
-              <Button variant="secondary" onClick={this.handleSave(exportText, this.state.data.id + '_export.sql')}>Save as SQL File</Button>
-              {this.state.data.import_metadata.database !== '' ? <Button variant="outline-secondary" onClick={(event: React.MouseEvent<HTMLButtonElement>) => this.setShowSQLExec(true)}>Execute SQL</Button>: ''}  
-              <Button variant="danger" onClick={this.handleNextStatementWithIssue}>Scroll to Next Issue</Button>
-            </p>
-          : ''}
+        <Container className="m-2">
+        </Container>
+
+        <footer className="fixed-bottom navbar-light bg-light">
+          <Container className="m-2" fluid style={{textAlign: 'center'}}>
+            {this.state.loaded ?
+              <p>
+                <Button variant="primary" onClick={this.handleSubmit}>Reimport</Button>
+                <Button variant="secondary" onClick={this.handleSave(exportText, this.state.data.id + '_export.sql')}>Save as SQL File</Button>
+                {this.state.data.import_metadata.database !== '' ? <Button variant="outline-secondary" onClick={(event: React.MouseEvent<HTMLButtonElement>) => this.setShowSQLExec(true)}>Execute SQL</Button>: ''}  
+                <Button variant="danger" onClick={this.handleNextStatementWithIssue}>Scroll to Next Issue</Button>
+              </p>
+            : <span className="visually-hidden">Loading...</span>}
+          </Container>
         </footer>
       </>
     );
