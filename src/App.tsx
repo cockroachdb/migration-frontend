@@ -630,7 +630,7 @@ function Home(props: {setID: (s: string) => void}) {
         </h1>
         <hr/>
 
-        <form  className="p-2">
+        <form onSubmit={handleSubmit} className="p-2">
           <p>Upload your file for import</p>
           <label className="mx-3">Choose file:</label>
           <input
