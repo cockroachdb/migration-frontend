@@ -162,13 +162,6 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
     this.setState({...this.state, data: newState});
   }
 
-  // react doesn't really like this as it doesn't like raw HTML, TODO figure out something smarter i guess.
-  hyperlinkText(inputText: string) {
-    //URLs starting with http://, https://, or ftp://
-    const replacePattern1 = /(\b(https?|ftp):\/\/[-A-Z0-9+&@#/%?=~_|!:,.;]*[-A-Z0-9+&@#/%=~_|])/gim;
-    return inputText.replace(replacePattern1, '<a href="$1" target="_blank">$1</a>');
-  }
-
   deleteAllUnimplemented(event: React.MouseEvent<HTMLButtonElement>) {  
     alert(`${this.deleteAllUnimplementedInternal()} statements deleted!`);
   }
@@ -423,8 +416,6 @@ function ExportDialog(props: {onHide: () => void; show: boolean, statements?: Im
             <pre>
               {exportText}
             </pre>
-
-            <input type="text" id="export-hidden" value={exportText} readOnly/>
           </>
         : ''}
       </Modal.Body>
@@ -469,16 +460,27 @@ function Statement(props: StatementProps) {
   const onFixSequence = (statementIdx: number, issueIdentifier: string) => 
     (event: React.MouseEvent<HTMLButtonElement>) => props.callbacks.handleFixSequence(statementIdx, issueIdentifier)
 
+
+  const URL_REGEX = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/;
+  const hyperlinkText = (inputText: string) => 
+    inputText.split(" ")
+    .map(part =>
+      URL_REGEX.test(part) ? <>
+        <a href={part} target="_blank">{part}</a>&nbsp;
+      </> : (part + " ")
+    );
+
   return (
     <Row className={"m-2 p-2 border " + (colorForIssue(statement.issues) != null ? 'border-' + colorForIssue(statement.issues): '')}>
       <Col xs={6}>
         <pre>{statement.original}</pre>
       </Col>
       <Col xs={6}>
+        
         <ul>
           {statement.issues != null && statement.issues.length > 0 ? statement.issues.map((issue, idx) => (
             <li key={'li' + idx} className={"issue-level-" + issue.level}>
-              {issue.text}
+              {hyperlinkText(issue.text)}
               {issue.type === 'unimplemented' ? (
                 <Button variant="outline-danger" onClick={onDelete(idx)}>Delete Statement</Button>
               ) : ''}
