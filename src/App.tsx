@@ -91,6 +91,7 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
     this.setShowExport = this.setShowExport.bind(this);
     this.setShowSQLExec = this.setShowSQLExec.bind(this);
     this.handleAddStatement = this.handleAddStatement.bind(this);
+    this.handleSave = this.handleSave.bind(this);
   }
 
   componentDidMount() {
@@ -234,7 +235,21 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
     this.setState({...this.state, data: newState});
   }
 
+  handleSave(exportText: string, fileName: string) {
+    return (event: React.MouseEvent<HTMLButtonElement>) => {
+      saveAs(new File([exportText], fileName, {type: "text/plain;charset=utf-8"}));
+    };
+  }
+
   render() {
+    const exportText = this.state.data.import_metadata.statements != null ? this.state.data.import_metadata.statements.map((statement) => {
+      const pg = statement.original.split("\n")[0];
+      pg.trim();
+      const crdb = statement.cockroach;
+      crdb.trim();
+      return '-- postgres: ' + pg + '\n' + crdb + '\n';
+    }).join('\n') : '';
+
     return (
       <>
         <Container className="bg-light p-5">
@@ -256,17 +271,13 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
         <Container className="p-4" fluid>
           {this.state.loaded ? 
             <>
-              <ExportDialog show={this.state.showExport} onHide={() => this.setShowExport(false)} statements={this.state.data.import_metadata.statements} />
+              <ExportDialog show={this.state.showExport} onHide={() => this.setShowExport(false)} exportText={exportText} handleSave={this.handleSave(exportText, this.state.data.id + '_export.sql')} />
               <SQLExecDialog show={this.state.showSQLExec} onHide={() => this.setShowSQLExec(false)} text={this.state.sqlExecText} database={this.state.data.import_metadata.database} />
             </>
             : ''}
           <form onSubmit={this.handleSubmit} className="p-2">
             {this.state.loaded ?
               <>
-                <Button variant="primary" type="submit">Reimport</Button>
-                <Button variant="secondary" onClick={(event: React.MouseEvent<HTMLButtonElement>) => this.setShowExport(true)}>Export/Save</Button>
-                {this.state.data.import_metadata.database != '' ? <Button variant="outline-secondary" onClick={(event: React.MouseEvent<HTMLButtonElement>) => this.setShowSQLExec(true)}>Execute SQL</Button>: ''}
-                <br/>
                 <Button variant="outline-secondary" onClick={this.fixAll}>Fix all</Button>
                 <Button variant="outline-danger" onClick={this.deleteAllUnimplemented}>Delete all unimplemented statements</Button>
                 <Button variant="outline-info" onClick={this.fixAllSequences}>All sequences to UUID</Button>
@@ -303,6 +314,17 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
             }
             </form>
         </Container>
+
+        <footer className="sticky-footer">
+          {this.state.loaded ?
+            <p>
+              <Button variant="primary" type="submit">Reimport</Button>
+              <Button variant="outline-primary" onClick={this.handleSave(exportText, this.state.data.id + '_export.sql')}>Save as SQL File</Button>
+              <Button variant="secondary" onClick={(event: React.MouseEvent<HTMLButtonElement>) => this.setShowExport(true)}>Raw Import</Button>
+              {this.state.data.import_metadata.database != '' ? <Button variant="outline-secondary" onClick={(event: React.MouseEvent<HTMLButtonElement>) => this.setShowSQLExec(true)}>Execute SQL</Button>: ''}  
+            </p>
+          : ''}
+        </footer>
       </>
     );
   }
@@ -391,33 +413,19 @@ function SQLExecDialog(props: {show: boolean, onHide: () => void, text: string, 
   )
 }
 
-function ExportDialog(props: {onHide: () => void; show: boolean, statements?: ImportStatement[]}) {
-  const exportText = props.statements != null ? props.statements.map((statement) => {
-    const pg = statement.original.split("\n")[0];
-    pg.trim();
-    const crdb = statement.cockroach;
-    crdb.trim();
-    return '-- postgres: ' + pg + '\n' + crdb + '\n';
-  }).join('\n') : '';
-  const handleSave = (event: React.MouseEvent<HTMLButtonElement>) => {
-    saveAs(new File([exportText], "export.sql", {type: "text/plain;charset=utf-8"}));
-  };
+function ExportDialog(props: {onHide: () => void; show: boolean, exportText: string, handleSave: (event: React.MouseEvent<HTMLButtonElement>) => void}) {
 
   return (
     <Modal show={props.show} onHide={props.onHide}>
       <Modal.Header closeButton>
-        <Modal.Title>Export</Modal.Title>
+        <Modal.Title>Raw Import</Modal.Title>
       </Modal.Header>
 
       <Modal.Body>
-        <Button onClick={handleSave}>Save</Button>
-        {props.statements != null ? 
-          <>
-            <pre>
-              {exportText}
-            </pre>
-          </>
-        : ''}
+        <Button onClick={props.handleSave}>Save</Button>
+          <pre>
+            {props.exportText}
+          </pre>
       </Modal.Body>
     </Modal>
   )
@@ -577,31 +585,36 @@ function Home(props: {setID: (s: string) => void}) {
   }
 
   return (
-    <Container className="bg-light p-5">
-      <h1 className="display-4 fw-bold">
-        CockroachDB Importer
-      </h1>
-      <hr/>
+    <>
+      <Container className="bg-light p-5">
+        <h1 className="display-4 fw-bold">
+          CockroachDB Importer
+        </h1>
+        <hr/>
 
-      <form onSubmit={handleSubmit} className="p-2">
-        <p>Upload your file for import</p>
-        <label className="mx-3">Choose file:</label>
-        <input
-          ref={inputRef}
-          onChange={handleDisplayFileDetails}
-          className="d-none"
-          type="file"
-        />
-        <button
-          onClick={handleUpload}
-          className={`btn btn-outline-${uploadedFileName ? "success" : "primary"}`}
-        >
-          {uploadedFileName ? uploadedFileName : "Upload"}
-        </button>
-        <br/>
-        <Button variant="primary" type="submit" disabled={uploadedFileName === null}>Import</Button>
-      </form>
-    </Container>   
+        <form onSubmit={handleSubmit} className="p-2">
+          <p>Upload your file for import</p>
+          <label className="mx-3">Choose file:</label>
+          <input
+            ref={inputRef}
+            onChange={handleDisplayFileDetails}
+            className="d-none"
+            type="file"
+          />
+          <button
+            onClick={handleUpload}
+            className={`btn btn-outline-${uploadedFileName ? "success" : "primary"}`}
+          >
+            {uploadedFileName ? uploadedFileName : "Upload"}
+          </button>
+          <br/>
+          <Button variant="primary" type="submit" disabled={uploadedFileName === null}>Import</Button>
+        </form>
+
+        <hr/>
+        <p>"The early 2010s called, they want their Twitter Bootstrap theme back!" - Vanessa Ung</p>
+      </Container>   
+    </>
   )
 }
 
@@ -619,9 +632,6 @@ function App() {
           <Route path="/import" element={<ImportApp id={id} />} />
         </Routes>
       </BrowserRouter>
-
-      <hr/>
-      <p>"The early 2010s called, they want their Twitter Bootstrap theme back!" - Vanessa Ung</p>
     </Container>
   );
 }
