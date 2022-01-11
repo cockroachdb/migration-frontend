@@ -278,8 +278,11 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
     const exportText = this.state.data.import_metadata.statements != null ? this.state.data.import_metadata.statements.map((statement) => {
       const pg = statement.original.split("\n")[0];
       pg.trim();
-      const crdb = statement.cockroach;
+      var crdb = statement.cockroach;
       crdb.trim();
+      if (crdb.charAt(crdb.length - 1) != ';') {
+        crdb += ";";
+      }
       return '-- postgres: ' + pg + '\n' + crdb + '\n';
     }).join('\n') : '';
 
