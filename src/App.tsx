@@ -49,16 +49,13 @@ interface ImportAppState {
   showExport: boolean;
   showSQLExec: boolean;
   sqlExecText: string;
+
+  activeStatement: number;
+  statementRefs: React.RefObject<HTMLTextAreaElement>[];
 }
 
 interface ImportAppProps {
   id: string;  
-}
-
-interface SQLResponse {
-  columns: string[];
-  rows: string[][];
-  error: string;
 }
 
 class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
@@ -79,6 +76,8 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
           database: "",
         },
       },
+      activeStatement: -1,
+      statementRefs: [],
     };
     this.handleSubmit = this.handleSubmit.bind(this);
     this.handleTextAreaChange = this.handleTextAreaChange.bind(this);
@@ -92,6 +91,8 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
     this.setShowSQLExec = this.setShowSQLExec.bind(this);
     this.handleAddStatement = this.handleAddStatement.bind(this);
     this.handleSave = this.handleSave.bind(this);
+    this.setActiveStatement = this.setActiveStatement.bind(this);
+    this.handleNextStatementWithIssue = this.handleNextStatementWithIssue.bind(this);
   }
 
   componentDidMount() {
@@ -102,26 +103,36 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
     this.refresh();
   }
 
+
+  supplyRefs(data: ImportAppState) {
+    const refs: React.RefObject<HTMLTextAreaElement>[] = [];
+    data.data.import_metadata.statements.forEach((statement) => {
+      refs.push(React.createRef());
+    })
+    data.statementRefs = refs;
+    data.activeStatement = -1;
+    return data;
+  }
+
   refresh() {
     this.setState({...this.state, loaded: false});
     axios.get<Import>("http://" + window.location.hostname + ":5050/get", { params: { 'id': this.props.id } }).then(
       response => {
-        this.setState({...this.state, loaded: true, data: response.data});
+        this.setState(this.supplyRefs({...this.state, loaded: true, data: response.data}));
       }
     ).catch(
       error => alert(`Error: ${error}`)
     );
   }
 
-  handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  handleSubmit() {
     this.setState({...this.state, loaded: false});
     axios.post<Import>(
       "http://" + window.location.hostname + ":5050/put",
       this.state.data,
     ).then(
       response => {
-        this.setState({...this.state, loaded: true, data: response.data});
+        this.setState(this.supplyRefs({...this.state, loaded: true, data: response.data}));
       }
     ).catch(
       error => alert(`Error: ${error}`)
@@ -149,7 +160,7 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
       response => {
         const newState = this.state.data;
         newState.import_metadata.statements[statementIdx] = response.data;
-        this.setState({...this.state, data: newState});
+        this.setState({...this.supplyRefs({...this.state, data: newState}), activeStatement: statementIdx});
       }
     ).catch(
       error => alert(`Error: ${error}`)
@@ -160,7 +171,7 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
     const newState = this.state.data;
     newState.import_metadata.statements[statementIdx].cockroach = '';
     newState.import_metadata.statements[statementIdx].issues.splice(issueIdx, 1);
-    this.setState({...this.state, data: newState});
+    this.setState({...this.supplyRefs({...this.state, data: newState}), activeStatement: statementIdx});
   }
 
   deleteAllUnimplemented(event: React.MouseEvent<HTMLButtonElement>) {  
@@ -232,13 +243,35 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
       cockroach: '',
       issues: [],
     })
-    this.setState({...this.state, data: newState});
+    this.setState(this.supplyRefs({...this.state, data: newState}));
   }
 
   handleSave(exportText: string, fileName: string) {
     return (event: React.MouseEvent<HTMLButtonElement>) => {
       saveAs(new File([exportText], fileName, {type: "text/plain;charset=utf-8"}));
     };
+  }
+
+  setActiveStatement(idx: number) {
+    this.setState({...this.state, activeStatement: idx});
+  }
+
+  handleNextStatementWithIssue() {
+    for (let i = 0; i < this.state.data.import_metadata.statements.length; i++) {
+      const idx = (this.state.activeStatement + i + 1) % this.state.data.import_metadata.statements.length;
+      const stmt = this.state.data.import_metadata.statements[idx];
+      if (stmt.issues != null && stmt.issues.length > 0) {
+        const ref = this.state.statementRefs[idx];
+        if (ref.current != null) {
+          ref.current.scrollIntoView({behavior: "smooth", block: "center", inline: "nearest"});
+          ref.current.focus();
+        } else {
+          alert("no ref found...");
+        }
+        return;
+      }
+    }
+    alert('no issues found!');
   }
 
   render() {
@@ -275,14 +308,15 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
               <SQLExecDialog show={this.state.showSQLExec} onHide={() => this.setShowSQLExec(false)} text={this.state.sqlExecText} database={this.state.data.import_metadata.database} />
             </>
             : ''}
-          <form onSubmit={this.handleSubmit} className="p-2">
+          <form className="p-2">
             {this.state.loaded ?
               <>
                 <Button variant="outline-secondary" onClick={this.fixAll}>Fix all</Button>
                 <Button variant="outline-danger" onClick={this.deleteAllUnimplemented}>Delete all unimplemented statements</Button>
                 <Button variant="outline-info" onClick={this.fixAllSequences}>All sequences to UUID</Button>
                 <br/>
-                <Button variant="outline-primary" onClick={this.undoAll}>Undo all</Button>
+                <Button variant="outline-primary" onClick={this.undoAll}>Undo all</Button>              
+                <Button variant="secondary" onClick={(event: React.MouseEvent<HTMLButtonElement>) => this.setShowExport(true)}>Raw Import</Button>
               </> : ''
             }
             <Row className="m-2 p-2">
@@ -295,6 +329,7 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
                   key={'r' + idx} 
                   statement={statement} 
                   database={this.state.data.import_metadata.database}
+                  ref={this.state.statementRefs[idx]}
                   idx={idx} 
                   callbacks={{
                     handleIssueDelete: this.handleIssueDelete,
@@ -302,6 +337,7 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
                     handleFixSequence: this.handleFixSequence,
                     handleAddStatement: this.handleAddStatement,
                     setShowSQLExec: this.setShowSQLExec,
+                    setActiveStatement: () => this.setActiveStatement(idx),
                   }}
                 />
               )) : (
@@ -318,10 +354,10 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
         <footer className="sticky-footer">
           {this.state.loaded ?
             <p>
-              <Button variant="primary" type="submit">Reimport</Button>
-              <Button variant="outline-primary" onClick={this.handleSave(exportText, this.state.data.id + '_export.sql')}>Save as SQL File</Button>
-              <Button variant="secondary" onClick={(event: React.MouseEvent<HTMLButtonElement>) => this.setShowExport(true)}>Raw Import</Button>
+              <Button variant="primary" onClick={this.handleSubmit}>Reimport</Button>
+              <Button variant="secondary" onClick={this.handleSave(exportText, this.state.data.id + '_export.sql')}>Save as SQL File</Button>
               {this.state.data.import_metadata.database != '' ? <Button variant="outline-secondary" onClick={(event: React.MouseEvent<HTMLButtonElement>) => this.setShowSQLExec(true)}>Execute SQL</Button>: ''}  
+              <Button variant="danger" onClick={this.handleNextStatementWithIssue}>Scroll to Next Issue</Button>
             </p>
           : ''}
         </footer>
@@ -414,7 +450,6 @@ function SQLExecDialog(props: {show: boolean, onHide: () => void, text: string, 
 }
 
 function ExportDialog(props: {onHide: () => void; show: boolean, exportText: string, handleSave: (event: React.MouseEvent<HTMLButtonElement>) => void}) {
-
   return (
     <Modal show={props.show} onHide={props.onHide}>
       <Modal.Header closeButton>
@@ -441,10 +476,11 @@ interface StatementProps {
     handleTextAreaChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
     handleAddStatement: (idx: number) => void;
     setShowSQLExec: (showSQLExec: boolean, text?: string) => void;
+    setActiveStatement: () => void;
   }
 }
 
-function Statement(props: StatementProps) {
+const Statement = React.forwardRef<HTMLTextAreaElement, StatementProps>((props, ref) => {
   const statement = props.statement;
 
   const colorForIssue = (issues: ImportIssue[]) => {
@@ -502,8 +538,10 @@ function Statement(props: StatementProps) {
           className="form-control"
           id={'ta' + props.idx}
           value={statement.cockroach}
+          ref={ref}
           placeholder={statement.cockroach.trim() === '' ? '-- statement ignored': ''}
           onChange={props.callbacks.handleTextAreaChange}
+          onFocus={() => props.callbacks.setActiveStatement()}
         />
 
         <p>
@@ -514,7 +552,7 @@ function Statement(props: StatementProps) {
       </Col>
     </Row>
   )
-}
+})
 
 function StatementsSummary(props: {statements: ImportStatement[]}) {
   var numStatements = 0;
@@ -592,7 +630,7 @@ function Home(props: {setID: (s: string) => void}) {
         </h1>
         <hr/>
 
-        <form onSubmit={handleSubmit} className="p-2">
+        <form  className="p-2">
           <p>Upload your file for import</p>
           <label className="mx-3">Choose file:</label>
           <input
