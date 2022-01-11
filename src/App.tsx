@@ -393,7 +393,7 @@ function SQLExecDialog(props: {show: boolean, onHide: () => void, text: string, 
 
   React.useEffect(() => {
     setSt({...st, text: props.text});
-  }, [st, props.text])
+  }, [props.text])
 
   const handleTextAreaChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => 
     setSt({...st, text: event.target.value});
