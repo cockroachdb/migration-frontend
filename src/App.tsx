@@ -550,6 +550,7 @@ const Statement = React.forwardRef<HTMLTextAreaElement, StatementProps>((props, 
           placeholder={statement.cockroach.trim() === '' ? '-- statement ignored': ''}
           onChange={props.callbacks.handleTextAreaChange}
           onFocus={() => props.callbacks.setActiveStatement()}
+          rows={statement.cockroach.split('\n').length + 1}
         />
 
         <p>
