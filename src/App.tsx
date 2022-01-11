@@ -243,7 +243,7 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
       cockroach: '',
       issues: [],
     })
-    this.setState(this.supplyRefs({...this.state, data: newState}));
+    this.setState({...this.supplyRefs({...this.state, data: newState}), activeStatement: this.state.activeStatement});
   }
 
   handleSave(exportText: string, fileName: string) {
