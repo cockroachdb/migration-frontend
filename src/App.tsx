@@ -1,4 +1,4 @@
-import React, { ReactHTML } from 'react';
+import React from 'react';
 
 import Alert from 'react-bootstrap/Alert';
 import Container from 'react-bootstrap/Container';
@@ -356,7 +356,7 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
             <p>
               <Button variant="primary" onClick={this.handleSubmit}>Reimport</Button>
               <Button variant="secondary" onClick={this.handleSave(exportText, this.state.data.id + '_export.sql')}>Save as SQL File</Button>
-              {this.state.data.import_metadata.database != '' ? <Button variant="outline-secondary" onClick={(event: React.MouseEvent<HTMLButtonElement>) => this.setShowSQLExec(true)}>Execute SQL</Button>: ''}  
+              {this.state.data.import_metadata.database !== '' ? <Button variant="outline-secondary" onClick={(event: React.MouseEvent<HTMLButtonElement>) => this.setShowSQLExec(true)}>Execute SQL</Button>: ''}  
               <Button variant="danger" onClick={this.handleNextStatementWithIssue}>Scroll to Next Issue</Button>
             </p>
           : ''}
@@ -385,7 +385,7 @@ function SQLExecDialog(props: {show: boolean, onHide: () => void, text: string, 
 
   React.useEffect(() => {
     setSt({...st, text: props.text});
-  }, [props.text])
+  }, [st, props.text])
 
   const handleTextAreaChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => 
     setSt({...st, text: event.target.value});
@@ -424,7 +424,7 @@ function SQLExecDialog(props: {show: boolean, onHide: () => void, text: string, 
         {st.results != null ?
           <>
             <hr/>
-            {st.results.error != "" ? <p>Error: {st.results.error}</p> : st.results.columns != null ? 
+            {st.results.error !== "" ? <p>Error: {st.results.error}</p> : st.results.columns != null ? 
             <Table striped bordered hover>
               <thead>
                 <tr>
@@ -505,12 +505,12 @@ const Statement = React.forwardRef<HTMLTextAreaElement, StatementProps>((props, 
     (event: React.MouseEvent<HTMLButtonElement>) => props.callbacks.handleFixSequence(statementIdx, issueIdentifier)
 
 
-  const URL_REGEX = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/;
+  const URL_REGEX = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)/;
   const hyperlinkText = (inputText: string) => 
     inputText.split(" ")
     .map(part =>
       URL_REGEX.test(part) ? <>
-        <a href={part} target="_blank">{part}</a>&nbsp;
+        <a href={part} target="_blank" rel="noreferrer">{part}</a>&nbsp;
       </> : (part + " ")
     );
 
