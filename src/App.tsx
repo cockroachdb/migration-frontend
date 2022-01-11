@@ -10,6 +10,7 @@ import Modal from 'react-bootstrap/Modal';
 import Table from 'react-bootstrap/Table';
 import './App.css';
 import Moment from 'react-moment';
+import { saveAs } from 'file-saver';
 
 import { useNavigate, BrowserRouter, Route, Routes } from 'react-router-dom';
 
@@ -270,7 +271,7 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
             {this.state.loaded ?
               <>
                 <Button variant="primary" type="submit">Reimport</Button>
-                <Button variant="secondary" onClick={(event: React.MouseEvent<HTMLButtonElement>) => this.setShowExport(true)}>Export</Button>
+                <Button variant="secondary" onClick={(event: React.MouseEvent<HTMLButtonElement>) => this.setShowExport(true)}>Export/Save</Button>
                 {this.state.data.import_metadata.database != '' ? <Button variant="outline-secondary" onClick={(event: React.MouseEvent<HTMLButtonElement>) => this.setShowSQLExec(true)}>Execute SQL</Button>: ''}
                 <br/>
                 <Button variant="outline-secondary" onClick={this.fixAll}>Fix all</Button>
@@ -398,25 +399,34 @@ function SQLExecDialog(props: {show: boolean, onHide: () => void, text: string, 
 }
 
 function ExportDialog(props: {onHide: () => void; show: boolean, statements?: ImportStatement[]}) {
+  const exportText = props.statements != null ? props.statements.map((statement) => {
+    const pg = statement.original.split("\n")[0];
+    pg.trim();
+    const crdb = statement.cockroach;
+    crdb.trim();
+    return '-- postgres: ' + pg + '\n' + crdb + '\n';
+  }).join('\n') : '';
+  const handleSave = (event: React.MouseEvent<HTMLButtonElement>) => {
+    saveAs(new File([exportText], "export.sql", {type: "text/plain;charset=utf-8"}));
+  };
+
   return (
     <Modal show={props.show} onHide={props.onHide}>
       <Modal.Header closeButton>
-        <Modal.Title>Raw Export</Modal.Title>
+        <Modal.Title>Export</Modal.Title>
       </Modal.Header>
 
       <Modal.Body>
+        <Button onClick={handleSave}>Save</Button>
         {props.statements != null ? 
-          <pre>
-            {props.statements.map((statement) => {
-              const pg = statement.original;
-              pg.trim();
-              pg.replace(/(\r\n|\n|\r)/gm, ' ');
-              const crdb = statement.cockroach;
-              crdb.trim()
-              return '-- postgres: ' + pg + '\n' + crdb + '\n\n'
-            })}
-          </pre>: ''
-        }
+          <>
+            <pre>
+              {exportText}
+            </pre>
+
+            <input type="text" id="export-hidden" value={exportText} readOnly/>
+          </>
+        : ''}
       </Modal.Body>
     </Modal>
   )
