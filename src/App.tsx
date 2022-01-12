@@ -58,53 +58,27 @@ interface ImportAppProps {
   id: string;  
 }
 
-class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
-  constructor(props: ImportAppProps) {
-    super(props);
-    this.state = {
-      loaded: false,
-      showExport: false,
-      showSQLExec: false,
-      sqlExecText: '',
-      data: {
-        id: props.id,
-        unix_nano: 0,
-        import_metadata: {
-          statements: [],
-          status: "",
-          message: "",
-          database: "",
-        },
+const ImportApp = (props: ImportAppProps) => {
+  const [state, setState] = React.useState<ImportAppState>({
+    loaded: false,
+    showExport: false,
+    showSQLExec: false,
+    sqlExecText: '',
+    data: {
+      id: props.id,
+      unix_nano: 0,
+      import_metadata: {
+        statements: [],
+        status: "",
+        message: "",
+        database: "",
       },
-      activeStatement: -1,
-      statementRefs: [],
-    };
-    this.handleSubmit = this.handleSubmit.bind(this);
-    this.handleTextAreaChange = this.handleTextAreaChange.bind(this);
-    this.handleIssueDelete = this.handleIssueDelete.bind(this);
-    this.deleteAllUnimplemented = this.deleteAllUnimplemented.bind(this);
-    this.handleFixSequence = this.handleFixSequence.bind(this);
-    this.fixAllSequences = this.fixAllSequences.bind(this);
-    this.fixAll = this.fixAll.bind(this);
-    this.undoAll = this.undoAll.bind(this);
-    this.setShowExport = this.setShowExport.bind(this);
-    this.setShowSQLExec = this.setShowSQLExec.bind(this);
-    this.handleAddStatement = this.handleAddStatement.bind(this);
-    this.handleSave = this.handleSave.bind(this);
-    this.setActiveStatement = this.setActiveStatement.bind(this);
-    this.handleNextStatementWithIssue = this.handleNextStatementWithIssue.bind(this);
-  }
+    },
+    activeStatement: -1,
+    statementRefs: [],
+  });
 
-  componentDidMount() {
-    this.refresh();
-  }
-
-  undoAll(event: React.FormEvent<HTMLButtonElement>) {
-    this.refresh();
-  }
-
-
-  supplyRefs(data: ImportAppState) {
+  const supplyRefs = (data: ImportAppState) => {
     const refs: React.RefObject<HTMLTextAreaElement>[] = [];
     data.data.import_metadata.statements.forEach((statement) => {
       refs.push(React.createRef());
@@ -114,77 +88,81 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
     return data;
   }
 
-  refresh() {
-    this.setState({...this.state, loaded: false});
-    axios.get<Import>("http://" + window.location.hostname + ":5050/get", { params: { 'id': this.props.id } }).then(
+  const refresh = () => {
+    setState({...state, loaded: false});
+    axios.get<Import>("http://" + window.location.hostname + ":5050/get", { params: { 'id': props.id } }).then(
       response => {
-        this.setState(this.supplyRefs({...this.state, loaded: true, data: response.data}));
+        setState(supplyRefs({...state, loaded: true, data: response.data}));
       }
     ).catch(
       error => alert(`Error: ${error}`)
     );
   }
 
-  handleSubmit() {
-    this.setState({...this.state, loaded: false});
+  React.useEffect(() => {
+    refresh();
+  }, [props.id])
+
+  const undoAll = () => refresh();
+
+  const handleSubmit = () => {
+    setState({...state, loaded: false});
     axios.post<Import>(
       "http://" + window.location.hostname + ":5050/put",
-      this.state.data,
+      state.data,
     ).then(
       response => {
-        this.setState(this.supplyRefs({...this.state, loaded: true, data: response.data}));
+        setState(supplyRefs({...state, loaded: true, data: response.data}));
       }
     ).catch(
       error => alert(`Error: ${error}`)
     );
   }
 
-  handleTextAreaChange(idx: number) {
-    return (event: React.ChangeEvent<HTMLTextAreaElement>) => this.handleTextAreaChangeForIdx(idx, event)
-  }
-
-  handleTextAreaChangeForIdx  ( idx: number, event: React.ChangeEvent<HTMLTextAreaElement>) {
-    const newState = this.state.data;
+  const handleTextAreaChangeForIdx = (idx: number, event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newState = state.data;
     newState.import_metadata.statements[idx].cockroach = event.target.value;
-    this.setState({...this.state, data: newState});
+    setState({...state, data: newState});
   }
 
-  handleFixSequence(statementIdx: number, issueIdentifier: string) {
+  const handleTextAreaChange = (idx: number) => (event: React.ChangeEvent<HTMLTextAreaElement>) => handleTextAreaChangeForIdx(idx, event);
+
+  const handleFixSequence = (statementIdx: number, issueIdentifier: string) => {
     axios.post<ImportStatement>(
       "http://" + window.location.hostname + ":5050/fix_sequence",
       {
-        statement: this.state.data.import_metadata.statements[statementIdx],
+        statement: state.data.import_metadata.statements[statementIdx],
         id: issueIdentifier,
       },
     ).then(
       response => {
-        const newState = this.state.data;
+        const newState = state.data;
         newState.import_metadata.statements[statementIdx] = response.data;
-        this.setState({...this.supplyRefs({...this.state, data: newState}), activeStatement: statementIdx});
+        setState({...supplyRefs({...state, data: newState}), activeStatement: statementIdx});
       }
     ).catch(
       error => alert(`Error: ${error}`)
     );
   }
 
-  handleIssueDelete(statementIdx: number, issueIdx: number) {
-    const newState = this.state.data;
+  const handleIssueDelete = (statementIdx: number, issueIdx: number) => {
+    const newState = state.data;
     newState.import_metadata.statements[statementIdx].cockroach = '';
     newState.import_metadata.statements[statementIdx].issues.splice(issueIdx, 1);
-    this.setState({...this.supplyRefs({...this.state, data: newState}), activeStatement: statementIdx});
+    setState({...supplyRefs({...state, data: newState}), activeStatement: statementIdx});
   }
 
-  deleteAllUnimplemented(event: React.MouseEvent<HTMLButtonElement>) {  
-    alert(`${this.deleteAllUnimplementedInternal()} statements deleted!`);
+  const deleteAllUnimplemented = (event: React.MouseEvent<HTMLButtonElement>) => {  
+    alert(`${deleteAllUnimplementedInternal()} statements deleted!`);
   }
 
-  deleteAllUnimplementedInternal() {
+  const deleteAllUnimplementedInternal = () => {
     // This is bad but w/e.
     const elems: {
       statementIdx: number;
       issueIdx: number;
     }[] = [];
-    this.state.data.import_metadata.statements.forEach((statement, statementIdx) => {
+    state.data.import_metadata.statements.forEach((statement, statementIdx) => {
       if (statement.issues != null) {
         statement.issues.forEach((issue, issueIdx) => {
           if (issue.type === 'unimplemented') {
@@ -193,22 +171,22 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
         })
       }
     })
-    elems.forEach((elem) => this.handleIssueDelete(elem.statementIdx, elem.issueIdx));
+    elems.forEach((elem) => handleIssueDelete(elem.statementIdx, elem.issueIdx));
     return elems.length;
   }
 
 
-  fixAllSequences(event: React.MouseEvent<HTMLButtonElement>) {
-    alert(`${this.fixAllSequencesInternal()} statements affected!`);
+  const fixAllSequences = (event: React.MouseEvent<HTMLButtonElement>) => {
+    alert(`${fixAllSequencesInternal()} statements affected!`);
   }
 
-  fixAllSequencesInternal() {
+  const fixAllSequencesInternal = () => {
     // This is bad but w/e.
     const elems: {
       statementIdx: number;
       id: string;
     }[] = [];
-    this.state.data.import_metadata.statements.forEach((statement, statementIdx) => {
+    state.data.import_metadata.statements.forEach((statement, statementIdx) => {
       if (statement.issues != null) {
         statement.issues.forEach((issue) => {
           if (issue.type === 'sequence') {
@@ -217,51 +195,51 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
         })
       }
     })
-    elems.forEach((elem) => this.handleFixSequence(elem.statementIdx, elem.id));
+    elems.forEach((elem) => handleFixSequence(elem.statementIdx, elem.id));
     return elems.length;
   }
 
-  fixAll(event: React.MouseEvent<HTMLButtonElement>) {
+  const fixAll = (event: React.MouseEvent<HTMLButtonElement>) => {
     var text = '';
-    text += `${this.fixAllSequencesInternal()} sequences converted to UUID\n`;
-    text += `${this.deleteAllUnimplementedInternal()} unimplemented statements deleted\n`;
+    text += `${fixAllSequencesInternal()} sequences converted to UUID\n`;
+    text += `${deleteAllUnimplementedInternal()} unimplemented statements deleted\n`;
     alert(text);
   }
 
-  setShowExport(showExport: boolean) {
-    this.setState({...this.state, showExport: showExport});
+  const setShowExport = (showExport: boolean) => {
+    setState({...state, showExport: showExport});
   }
 
-  setShowSQLExec(showSQLExec: boolean, text?: string) {
-    this.setState({...this.state, showSQLExec: showSQLExec, sqlExecText: text != null ? text : this.state.sqlExecText});
+  const setShowSQLExec = (showSQLExec: boolean, text?: string) => {
+    setState({...state, showSQLExec: showSQLExec, sqlExecText: text != null ? text : state.sqlExecText});
   }
 
-  handleAddStatement(idx: number) {
-    const newState = this.state.data;
+  const handleAddStatement = (idx: number) => {
+    const newState = state.data;
     newState.import_metadata.statements.splice(idx, 0, {
       original: '-- newly added statement',
       cockroach: '',
       issues: [],
     })
-    this.setState({...this.supplyRefs({...this.state, data: newState}), activeStatement: this.state.activeStatement});
+    setState({...supplyRefs({...state, data: newState}), activeStatement: state.activeStatement});
   }
 
-  handleSave(exportText: string, fileName: string) {
+  const handleSave = (exportText: string, fileName: string) => {
     return (event: React.MouseEvent<HTMLButtonElement>) => {
       saveAs(new File([exportText], fileName, {type: "text/plain;charset=utf-8"}));
     };
   }
 
-  setActiveStatement(idx: number) {
-    this.setState({...this.state, activeStatement: idx});
+  const setActiveStatement = (idx: number) => {
+    setState({...state, activeStatement: idx});
   }
 
-  handleNextStatementWithIssue() {
-    for (let i = 0; i < this.state.data.import_metadata.statements.length; i++) {
-      const idx = (this.state.activeStatement + i + 1) % this.state.data.import_metadata.statements.length;
-      const stmt = this.state.data.import_metadata.statements[idx];
+  const handleNextStatementWithIssue = () => {
+    for (let i = 0; i < state.data.import_metadata.statements.length; i++) {
+      const idx = (state.activeStatement + i + 1) % state.data.import_metadata.statements.length;
+      const stmt = state.data.import_metadata.statements[idx];
       if (stmt.issues != null && stmt.issues.length > 0) {
-        const ref = this.state.statementRefs[idx];
+        const ref = state.statementRefs[idx];
         if (ref.current != null) {
           ref.current.scrollIntoView({behavior: "smooth", block: "center", inline: "nearest"});
           ref.current.focus();
@@ -274,104 +252,102 @@ class ImportApp extends React.Component<ImportAppProps, ImportAppState> {
     alert('no issues found!');
   }
 
-  render() {
-    const exportText = this.state.data.import_metadata.statements != null ? this.state.data.import_metadata.statements.map((statement) => {
-      const pg = statement.original.split("\n")[0];
-      pg.trim();
-      var crdb = statement.cockroach;
-      crdb.trim();
-      if (crdb.charAt(crdb.length - 1) != ';') {
-        crdb += ";";
-      }
-      return '-- postgres: ' + pg + '\n' + crdb + '\n';
-    }).join('\n') : '';
+  const exportText = state.data.import_metadata.statements != null ? state.data.import_metadata.statements.map((statement) => {
+    const pg = statement.original.split("\n")[0];
+    pg.trim();
+    var crdb = statement.cockroach;
+    crdb.trim();
+    if (crdb.charAt(crdb.length - 1) != ';') {
+      crdb += ";";
+    }
+    return '-- postgres: ' + pg + '\n' + crdb + '\n';
+  }).join('\n') : '';
 
-    return (
-      <>
-        <Container className="bg-light p-5">
-          <h1 className="display-4 fw-bold">
-            {!this.state.loaded ? 'Loading database migration....' : this.state.data.id}
-          </h1>
-          {this.state.loaded ? 
+  return (
+    <>
+      <Container className="bg-light p-5">
+        <h1 className="display-4 fw-bold">
+          {!state.loaded ? 'Loading database migration....' : state.data.id}
+        </h1>
+        {state.loaded ? 
+          <>
+            <Alert variant={state.data.import_metadata.status}>{state.data.import_metadata.message}</Alert>
+            <hr/>
+            <StatementsSummary statements={state.data.import_metadata.statements} />
+          </>
+          : ''
+        }          
+        <hr/>
+        {state.loaded ? <div>Last executed&nbsp;<Moment date={new Date(state.data.unix_nano / 1000000).toISOString()} fromNow /></div>: ''}
+      </Container>
+
+      <Container className="p-4" fluid>
+        {state.loaded ? 
+          <>
+            <ExportDialog show={state.showExport} onHide={() => setShowExport(false)} exportText={exportText} handleSave={handleSave(exportText, state.data.id + '_export.sql')} />
+            <SQLExecDialog show={state.showSQLExec} onHide={() => setShowSQLExec(false)} text={state.sqlExecText} database={state.data.import_metadata.database} />
+          </>
+          : ''}
+        <form className="p-2">
+          {state.loaded ?
             <>
-              <Alert variant={this.state.data.import_metadata.status}>{this.state.data.import_metadata.message}</Alert>
-              <hr/>
-              <StatementsSummary statements={this.state.data.import_metadata.statements} />
-            </>
-            : ''
-          }          
-          <hr/>
-          {this.state.loaded ? <div>Last executed&nbsp;<Moment date={new Date(this.state.data.unix_nano / 1000000).toISOString()} fromNow /></div>: ''}
-        </Container>
+              <Button variant="outline-secondary" onClick={fixAll}>Fix all</Button>
+              <Button variant="outline-danger" onClick={deleteAllUnimplemented}>Delete all unimplemented statements</Button>
+              <Button variant="outline-info" onClick={fixAllSequences}>All sequences to UUID</Button>
+              <br/>
+              <Button variant="outline-primary" onClick={undoAll}>Undo all</Button>              
+              <Button variant="secondary" onClick={(event: React.MouseEvent<HTMLButtonElement>) => setShowExport(true)}>Raw Import</Button>
+            </> : ''
+          }
+          <Row className="m-2 p-2">
+            <Col xs={6}><strong>PostgreSQL statement</strong></Col>
+            <Col xs={6}><strong>CockroachDB statement</strong></Col>
+          </Row>
+          {state.loaded ?
+            state.data.import_metadata.statements.map((statement, idx) => (
+              <Statement 
+                key={'r' + idx} 
+                statement={statement} 
+                database={state.data.import_metadata.database}
+                ref={state.statementRefs[idx]}
+                idx={idx} 
+                callbacks={{
+                  handleIssueDelete: handleIssueDelete,
+                  handleTextAreaChange: handleTextAreaChange(idx),
+                  handleFixSequence: handleFixSequence,
+                  handleAddStatement: handleAddStatement,
+                  setShowSQLExec: setShowSQLExec,
+                  setActiveStatement: () => setActiveStatement(idx),
+                }}
+              />
+            )) : (
+              <Row className="justify-content-md-center">
+                <Spinner animation="border" role="status">
+                  <span className="visually-hidden">Loading...</span>
+                </Spinner>
+              </Row>
+            )
+          }
+          </form>
+      </Container>
 
-        <Container className="p-4" fluid>
-          {this.state.loaded ? 
-            <>
-              <ExportDialog show={this.state.showExport} onHide={() => this.setShowExport(false)} exportText={exportText} handleSave={this.handleSave(exportText, this.state.data.id + '_export.sql')} />
-              <SQLExecDialog show={this.state.showSQLExec} onHide={() => this.setShowSQLExec(false)} text={this.state.sqlExecText} database={this.state.data.import_metadata.database} />
-            </>
-            : ''}
-          <form className="p-2">
-            {this.state.loaded ?
-              <>
-                <Button variant="outline-secondary" onClick={this.fixAll}>Fix all</Button>
-                <Button variant="outline-danger" onClick={this.deleteAllUnimplemented}>Delete all unimplemented statements</Button>
-                <Button variant="outline-info" onClick={this.fixAllSequences}>All sequences to UUID</Button>
-                <br/>
-                <Button variant="outline-primary" onClick={this.undoAll}>Undo all</Button>              
-                <Button variant="secondary" onClick={(event: React.MouseEvent<HTMLButtonElement>) => this.setShowExport(true)}>Raw Import</Button>
-              </> : ''
-            }
-            <Row className="m-2 p-2">
-              <Col xs={6}><strong>PostgreSQL statement</strong></Col>
-              <Col xs={6}><strong>CockroachDB statement</strong></Col>
-            </Row>
-            {this.state.loaded ?
-              this.state.data.import_metadata.statements.map((statement, idx) => (
-                <Statement 
-                  key={'r' + idx} 
-                  statement={statement} 
-                  database={this.state.data.import_metadata.database}
-                  ref={this.state.statementRefs[idx]}
-                  idx={idx} 
-                  callbacks={{
-                    handleIssueDelete: this.handleIssueDelete,
-                    handleTextAreaChange: this.handleTextAreaChange(idx),
-                    handleFixSequence: this.handleFixSequence,
-                    handleAddStatement: this.handleAddStatement,
-                    setShowSQLExec: this.setShowSQLExec,
-                    setActiveStatement: () => this.setActiveStatement(idx),
-                  }}
-                />
-              )) : (
-                <Row className="justify-content-md-center">
-                  <Spinner animation="border" role="status">
-                    <span className="visually-hidden">Loading...</span>
-                  </Spinner>
-                </Row>
-              )
-            }
-            </form>
-        </Container>
+      <Container className="m-2">
+      </Container>
 
-        <Container className="m-2">
+      <footer className="fixed-bottom navbar-light bg-light">
+        <Container className="m-2" fluid style={{textAlign: 'center'}}>
+          {state.loaded ?
+            <p>
+              <Button variant="primary" onClick={handleSubmit}>Reimport</Button>
+              <Button variant="secondary" onClick={handleSave(exportText, state.data.id + '_export.sql')}>Save as SQL File</Button>
+              {state.data.import_metadata.database !== '' ? <Button variant="outline-secondary" onClick={(event: React.MouseEvent<HTMLButtonElement>) => setShowSQLExec(true)}>Execute SQL</Button>: ''}  
+              <Button variant="danger" onClick={handleNextStatementWithIssue}>Scroll to Next Issue</Button>
+            </p>
+          : <span className="visually-hidden">Loading...</span>}
         </Container>
-
-        <footer className="fixed-bottom navbar-light bg-light">
-          <Container className="m-2" fluid style={{textAlign: 'center'}}>
-            {this.state.loaded ?
-              <p>
-                <Button variant="primary" onClick={this.handleSubmit}>Reimport</Button>
-                <Button variant="secondary" onClick={this.handleSave(exportText, this.state.data.id + '_export.sql')}>Save as SQL File</Button>
-                {this.state.data.import_metadata.database !== '' ? <Button variant="outline-secondary" onClick={(event: React.MouseEvent<HTMLButtonElement>) => this.setShowSQLExec(true)}>Execute SQL</Button>: ''}  
-                <Button variant="danger" onClick={this.handleNextStatementWithIssue}>Scroll to Next Issue</Button>
-              </p>
-            : <span className="visually-hidden">Loading...</span>}
-          </Container>
-        </footer>
-      </>
-    );
-  }
+      </footer>
+    </>
+  );
 }
 
 interface SQLExecResults {
@@ -457,7 +433,7 @@ function SQLExecDialog(props: {show: boolean, onHide: () => void, text: string, 
   )
 }
 
-function ExportDialog(props: {onHide: () => void; show: boolean, exportText: string, handleSave: (event: React.MouseEvent<HTMLButtonElement>) => void}) {
+const ExportDialog = (props: {onHide: () => void; show: boolean, exportText: string, handleSave: (event: React.MouseEvent<HTMLButtonElement>) => void}) => {
   return (
     <Modal show={props.show} onHide={props.onHide}>
       <Modal.Header closeButton>
