@@ -340,7 +340,7 @@ const ImportApp = (props: ImportAppProps) => {
             <p>
               <Button variant="primary" onClick={handleSubmit}>Reimport</Button>
               <Button variant="secondary" onClick={handleSave(exportText, state.data.id + '_export.sql')}>Save as SQL File</Button>
-              {state.data.import_metadata.database !== '' ? <Button variant="outline-secondary" onClick={(event: React.MouseEvent<HTMLButtonElement>) => setShowSQLExec(true)}>Execute SQL</Button>: ''}  
+              <Button variant="outline-secondary" onClick={(event: React.MouseEvent<HTMLButtonElement>) => setShowSQLExec(true)} disabled={state.data.import_metadata.database === ''}>Execute SQL</Button>
               <Button variant="danger" onClick={handleNextStatementWithIssue}>Scroll to Next Issue</Button>
             </p>
           : <span className="visually-hidden">Loading...</span>}
