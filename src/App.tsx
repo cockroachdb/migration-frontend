@@ -4,6 +4,9 @@ import Alert from 'react-bootstrap/Alert';
 import Container from 'react-bootstrap/Container';
 import Col from 'react-bootstrap/Col';
 import Row from 'react-bootstrap/Row';
+import Dropdown from 'react-bootstrap/Dropdown';
+import ButtonGroup from 'react-bootstrap/ButtonGroup';
+import DropdownButton from 'react-bootstrap/DropdownButton';
 import Button from 'react-bootstrap/Button';
 import Spinner from 'react-bootstrap/Spinner';
 import Modal from 'react-bootstrap/Modal';
@@ -152,7 +155,7 @@ const ImportApp = (props: ImportAppProps) => {
     setState({...supplyRefs({...state, data: newState}), activeStatement: statementIdx});
   }
 
-  const deleteAllUnimplemented = (event: React.MouseEvent<HTMLButtonElement>) => {  
+  const deleteAllUnimplemented = () => {  
     alert(`${deleteAllUnimplementedInternal()} statements deleted!`);
   }
 
@@ -176,8 +179,8 @@ const ImportApp = (props: ImportAppProps) => {
   }
 
 
-  const fixAllSequences = (event: React.MouseEvent<HTMLButtonElement>) => {
-    alert(`${fixAllSequencesInternal()} statements affected!`);
+  const fixAllSequences = () => {
+    alert(`${fixAllSequencesInternal()} sequences affected!`);
   }
 
   const fixAllSequencesInternal = () => {
@@ -199,7 +202,7 @@ const ImportApp = (props: ImportAppProps) => {
     return elems.length;
   }
 
-  const fixAll = (event: React.MouseEvent<HTMLButtonElement>) => {
+  const fixAll = () => {
     var text = '';
     text += `${fixAllSequencesInternal()} sequences converted to UUID\n`;
     text += `${deleteAllUnimplementedInternal()} unimplemented statements deleted\n`;
@@ -225,7 +228,7 @@ const ImportApp = (props: ImportAppProps) => {
   }
 
   const handleSave = (exportText: string, fileName: string) => {
-    return (event: React.MouseEvent<HTMLButtonElement>) => {
+    return () => {
       saveAs(new File([exportText], fileName, {type: "text/plain;charset=utf-8"}));
     };
   }
@@ -263,6 +266,31 @@ const ImportApp = (props: ImportAppProps) => {
     return '-- postgres: ' + pg + '\n' + crdb + '\n';
   }).join('\n') : '';
 
+  const handleSelectAction = (key: string | null) => {
+    if (key == null) {
+      return;
+    }
+    switch (key) {
+    case "undoAll":
+      undoAll();
+      break;
+    case "showSQLExec":
+      setShowExport(true);
+      break;
+    case "fixAll":
+      fixAll();
+      break;
+    case "deleteAllUnimplemented":
+      deleteAllUnimplemented();
+      break;
+    case "fixAllSequences":
+      fixAllSequences();
+      break;
+    default:
+      alert("unknown action: " + key)
+    }
+  }
+
   return (
     <>
       <Container className="bg-light p-5">
@@ -289,16 +317,6 @@ const ImportApp = (props: ImportAppProps) => {
           </>
           : ''}
         <form className="p-2">
-          {state.loaded ?
-            <>
-              <Button variant="outline-secondary" onClick={fixAll}>Fix all</Button>
-              <Button variant="outline-danger" onClick={deleteAllUnimplemented}>Delete all unimplemented statements</Button>
-              <Button variant="outline-info" onClick={fixAllSequences}>All sequences to UUID</Button>
-              <br/>
-              <Button variant="outline-primary" onClick={undoAll}>Undo all</Button>              
-              <Button variant="secondary" onClick={(event: React.MouseEvent<HTMLButtonElement>) => setShowExport(true)}>Raw Import</Button>
-            </> : ''
-          }
           <Row className="m-2 p-2">
             <Col xs={6}><strong>PostgreSQL statement</strong></Col>
             <Col xs={6}><strong>CockroachDB statement</strong></Col>
@@ -336,14 +354,30 @@ const ImportApp = (props: ImportAppProps) => {
 
       <footer className="fixed-bottom navbar-light bg-light">
         <Container className="m-2" fluid style={{textAlign: 'center'}}>
-          {state.loaded ?
-            <p>
-              <Button variant="primary" onClick={handleSubmit}>Reimport</Button>
-              <Button variant="secondary" onClick={handleSave(exportText, state.data.id + '_export.sql')}>Save as SQL File</Button>
-              <Button variant="outline-secondary" onClick={(event: React.MouseEvent<HTMLButtonElement>) => setShowSQLExec(true)} disabled={state.data.import_metadata.database === ''}>Execute SQL</Button>
-              <Button variant="danger" onClick={handleNextStatementWithIssue}>Scroll to Next Issue</Button>
-            </p>
-          : <span className="visually-hidden">Loading...</span>}
+          <ButtonGroup>
+            {state.loaded ?
+              <p>
+                <Button variant="primary" onClick={handleSubmit}>Reimport</Button>
+                <DropdownButton
+                  drop={'up'}
+                  as={ButtonGroup}
+                  variant="info"
+                  title={`Actions`}
+                  onSelect={handleSelectAction}
+                >
+                  <Dropdown.Item eventKey="undoAll">Revert to last import attempt</Dropdown.Item>
+                  <Dropdown.Item eventKey="showSQLExec">Show current dump</Dropdown.Item>
+                  <Dropdown.Divider />
+                  <Dropdown.Item eventKey="fixAll">Fix all</Dropdown.Item>
+                  <Dropdown.Item eventKey="deleteAllUnimplemented">Delete unimplemented statements</Dropdown.Item>
+                  <Dropdown.Item eventKey="fixAllSequences">Fix all sequences</Dropdown.Item>
+                </DropdownButton>
+                <Button variant="secondary" onClick={handleSave(exportText, state.data.id + '_export.sql')}>Save as SQL File</Button>
+                <Button variant="outline-secondary" onClick={() => setShowSQLExec(true)} disabled={state.data.import_metadata.database === ''}>Execute SQL</Button>
+                <Button variant="danger" onClick={handleNextStatementWithIssue}>Scroll to Next Issue</Button>
+              </p>
+            : <span className="visually-hidden">Loading...</span>}
+          </ButtonGroup>
         </Container>
       </footer>
     </>
@@ -374,7 +408,7 @@ function SQLExecDialog(props: {show: boolean, onHide: () => void, text: string, 
   const handleTextAreaChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => 
     setSt({...st, text: event.target.value});
 
-  const handleExecute = (event: React.MouseEvent<HTMLButtonElement>) => {
+  const handleExecute = () => {
     axios.post<SQLExecResults>(
       "http://" + window.location.hostname + ":5050/sql",
       {database: props.database, sql: st.text},
@@ -433,7 +467,7 @@ function SQLExecDialog(props: {show: boolean, onHide: () => void, text: string, 
   )
 }
 
-const ExportDialog = (props: {onHide: () => void; show: boolean, exportText: string, handleSave: (event: React.MouseEvent<HTMLButtonElement>) => void}) => {
+const ExportDialog = (props: {onHide: () => void; show: boolean, exportText: string, handleSave: () => void}) => {
   return (
     <Modal show={props.show} onHide={props.onHide}>
       <Modal.Header closeButton>
@@ -484,9 +518,9 @@ const Statement = React.forwardRef<HTMLTextAreaElement, StatementProps>((props, 
   }
 
   const onDelete = (idx: number) =>
-    (event: React.MouseEvent<HTMLButtonElement>) => props.callbacks.handleIssueDelete(props.idx, idx);
+    () => props.callbacks.handleIssueDelete(props.idx, idx);
   const onFixSequence = (statementIdx: number, issueIdentifier: string) => 
-    (event: React.MouseEvent<HTMLButtonElement>) => props.callbacks.handleFixSequence(statementIdx, issueIdentifier)
+    () => props.callbacks.handleFixSequence(statementIdx, issueIdentifier)
 
 
   const URL_REGEX = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)/;
@@ -533,9 +567,9 @@ const Statement = React.forwardRef<HTMLTextAreaElement, StatementProps>((props, 
         />
 
         <p>
-          <Button variant="outline-primary" onClick={(event: React.MouseEvent<HTMLButtonElement>) => props.callbacks.handleAddStatement(props.idx)}>Insert Statement Before</Button>
-          <Button variant="outline-primary" onClick={(event: React.MouseEvent<HTMLButtonElement>) => props.callbacks.handleAddStatement(props.idx + 1)}>Insert Statement After</Button>
-          {props.database !== "" ? <Button variant="outline-primary" onClick={(event: React.MouseEvent<HTMLButtonElement>) => props.callbacks.setShowSQLExec(true, statement.cockroach)}>Execute</Button> : ''}
+          <Button variant="outline-primary" onClick={() => props.callbacks.handleAddStatement(props.idx)}>Insert Statement Before</Button>
+          <Button variant="outline-primary" onClick={() => props.callbacks.handleAddStatement(props.idx + 1)}>Insert Statement After</Button>
+          {props.database !== "" ? <Button variant="outline-primary" onClick={() => props.callbacks.setShowSQLExec(true, statement.cockroach)}>Execute</Button> : ''}
         </p>
       </Col>
     </Row>
@@ -619,7 +653,8 @@ function Home(props: {setID: (s: string) => void}) {
         <hr/>
 
         <form onSubmit={handleSubmit} className="p-2">
-          <p>Upload your file for import</p>
+          <p>Upload your file for import.</p>
+          <p>Since this application is not very smart, <strong>name your file something unique to you, e.g. <code>otan_example.sql</code></strong>, or you may overwrite or view someone else's attempt.</p>
           <label className="mx-3">Choose file:</label>
           <input
             ref={inputRef}
