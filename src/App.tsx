@@ -279,10 +279,25 @@ const ImportApp = (props: ImportAppProps) => {
 
   const findAndReplace = (args: FindAndReplaceArgs) => {
     if (args.find !== '') {
+      var re : (RegExp | null) = null; 
+      try {
+        re = new RegExp(args.find); 
+      } catch {
+        return;
+      }
       const newState = state.data;
       state.data.import_metadata.statements.forEach((statement, idx) => {
-        state.data.import_metadata.statements[idx].cockroach =
-          state.data.import_metadata.statements[idx].cockroach.replace(args.find, args.replace);
+        if (args.isRegex) {
+          if (re == null) {
+            alert("invalid regexp");
+            return;
+          }
+          state.data.import_metadata.statements[idx].cockroach =
+            state.data.import_metadata.statements[idx].cockroach.replace(re, args.replace);
+        } else {
+          state.data.import_metadata.statements[idx].cockroach =
+            state.data.import_metadata.statements[idx].cockroach.replace(args.find, args.replace);
+        }
       });
       setState({...supplyRefs({...state, data: newState}), activeStatement: state.activeStatement});
     }
@@ -439,6 +454,8 @@ function FindAndReplaceDialog(props: {show: boolean, onHide: () => void, findAnd
     setState({...state, find: event.target.value});
   const setReplaceText = (event: React.ChangeEvent<HTMLInputElement>) => 
     setState({...state, replace: event.target.value});
+  const setIsRegex = (event: React.ChangeEvent<HTMLInputElement>) => 
+    setState({...state, isRegex: event.target.checked});
 
   return (
     <Modal show={props.show} onHide={props.onHide} >
@@ -450,11 +467,15 @@ function FindAndReplaceDialog(props: {show: boolean, onHide: () => void, findAnd
         <Form>
           <Form.Group className="mb-3" controlId="exampleForm.ControlInput1">
             <Form.Label>Find</Form.Label>
-            <Form.Control type="text" placeholder="Find text" onChange={setFindText} />
+            <Form.Control type="text" placeholder="Find text" value={state.find} onChange={setFindText} />
           </Form.Group>
           <Form.Group className="mb-3" controlId="exampleForm.ControlInput2">
             <Form.Label>Replace</Form.Label>
-            <Form.Control type="text" placeholder="Replace text" onChange={setReplaceText} />
+            <Form.Control type="text" placeholder="Replace text (use $1 for capture groups)" value={state.replace} onChange={setReplaceText} />
+          </Form.Group>
+          <Form.Group className="mb-3" controlId="exampleForm.ControlInput2">
+            <Form.Label>Regex?</Form.Label>
+            <Form.Check type="checkbox" checked={state.isRegex} onChange={setIsRegex} />
           </Form.Group>
           <Button variant="primary" onClick={() => props.findAndReplace(state)}>Execute</Button>
         </Form>
