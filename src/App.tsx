@@ -7,6 +7,7 @@ import Row from 'react-bootstrap/Row';
 import Dropdown from 'react-bootstrap/Dropdown';
 import ButtonGroup from 'react-bootstrap/ButtonGroup';
 import DropdownButton from 'react-bootstrap/DropdownButton';
+import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
 import Spinner from 'react-bootstrap/Spinner';
 import Modal from 'react-bootstrap/Modal';
@@ -51,6 +52,7 @@ interface ImportAppState {
   loaded: boolean;
   showExport: boolean;
   showSQLExec: boolean;
+  showFindAndReplace: boolean;
   sqlExecText: string;
 
   activeStatement: number;
@@ -61,11 +63,18 @@ interface ImportAppProps {
   id: string;  
 }
 
+interface FindAndReplaceArgs {
+  find: string;
+  replace: string;
+  isRegex: boolean;  
+}
+
 const ImportApp = (props: ImportAppProps) => {
   const [state, setState] = React.useState<ImportAppState>({
     loaded: false,
     showExport: false,
     showSQLExec: false,
+    showFindAndReplace: false,
     sqlExecText: '',
     data: {
       id: props.id,
@@ -266,6 +275,20 @@ const ImportApp = (props: ImportAppProps) => {
     return '-- postgres: ' + pg + '\n' + crdb + '\n';
   }).join('\n') : '';
 
+  const setFindAndReplace = (b: boolean) => setState({...state, showFindAndReplace: b});
+
+  const findAndReplace = (args: FindAndReplaceArgs) => {
+    if (args.find !== '') {
+      const newState = state.data;
+      state.data.import_metadata.statements.forEach((statement, idx) => {
+        state.data.import_metadata.statements[idx].cockroach =
+          state.data.import_metadata.statements[idx].cockroach.replace(args.find, args.replace);
+      });
+      setState({...supplyRefs({...state, data: newState}), activeStatement: state.activeStatement});
+    }
+    setFindAndReplace(false);
+  };
+
   const handleSelectAction = (key: string | null) => {
     if (key == null) {
       return;
@@ -285,6 +308,9 @@ const ImportApp = (props: ImportAppProps) => {
       break;
     case "fixAllSequences":
       fixAllSequences();
+      break;
+    case "findAndReplace":
+      setFindAndReplace(true);
       break;
     default:
       alert("unknown action: " + key)
@@ -309,10 +335,14 @@ const ImportApp = (props: ImportAppProps) => {
         {state.loaded ? <div>Last imported&nbsp;<Moment date={new Date(state.data.unix_nano / 1000000).toISOString()} fromNow /></div>: ''}
       </Container>
 
-      <Container className="p-4" fluid>
+      <Container className="p-4 m-2" fluid>
         {state.loaded ? 
           <>
             <ExportDialog show={state.showExport} onHide={() => setShowExport(false)} exportText={exportText} handleSave={handleSave(exportText, state.data.id + '_export.sql')} />
+            <FindAndReplaceDialog
+              show={state.showFindAndReplace}
+              onHide={() => setFindAndReplace(false)}
+              findAndReplace={findAndReplace}/>
             <SQLExecDialog show={state.showSQLExec} onHide={() => setShowSQLExec(false)} text={state.sqlExecText} database={state.data.import_metadata.database} />
           </>
           : ''}
@@ -349,14 +379,11 @@ const ImportApp = (props: ImportAppProps) => {
           </form>
       </Container>
 
-      <Container className="m-2">
-      </Container>
-
       <footer className="fixed-bottom navbar-light bg-light">
         <Container className="m-2" fluid style={{textAlign: 'center'}}>
             {state.loaded ?
               <ButtonGroup>
-                <Button variant="primary" onClick={handleSubmit}>Reimport</Button>
+                <Button variant="primary" onClick={handleSubmit}>Save and Reimport</Button>
                 <DropdownButton
                   drop={'up'}
                   as={ButtonGroup}
@@ -366,9 +393,14 @@ const ImportApp = (props: ImportAppProps) => {
                 >
                   <Dropdown.Item eventKey="undoAll">Revert to last import attempt</Dropdown.Item>
                   <Dropdown.Item eventKey="showSQLExec">Show current dump</Dropdown.Item>
+
+                  <Dropdown.Divider />
+
+                  <Dropdown.Header>Editors</Dropdown.Header>
+                  <Dropdown.Item eventKey="findAndReplace">Find and Replace</Dropdown.Item>
                   
                   <Dropdown.Divider />
-                  
+
                   <Dropdown.Header>Automagic fixers</Dropdown.Header>
                   <Dropdown.Item eventKey="fixAll">Automatically fix all issues</Dropdown.Item>
                   <Dropdown.Item eventKey="deleteAllUnimplemented">Delete unimplemented statements</Dropdown.Item>
@@ -394,6 +426,41 @@ interface SQLExecResults {
 interface SQLExecState {
   results: SQLExecResults | null;
   text: string;
+}
+
+function FindAndReplaceDialog(props: {show: boolean, onHide: () => void, findAndReplace: (args: FindAndReplaceArgs) => void}) {
+  const [state, setState] = React.useState<FindAndReplaceArgs>({
+    find: '',
+    replace: '',
+    isRegex: false,
+  });
+
+  const setFindText = (event: React.ChangeEvent<HTMLInputElement>) => 
+    setState({...state, find: event.target.value});
+  const setReplaceText = (event: React.ChangeEvent<HTMLInputElement>) => 
+    setState({...state, replace: event.target.value});
+
+  return (
+    <Modal show={props.show} onHide={props.onHide} >
+      <Modal.Header closeButton>
+        <Modal.Title>Find and Replace</Modal.Title>
+      </Modal.Header>
+
+      <Modal.Body>
+        <Form>
+          <Form.Group className="mb-3" controlId="exampleForm.ControlInput1">
+            <Form.Label>Find</Form.Label>
+            <Form.Control type="text" placeholder="Find text" onChange={setFindText} />
+          </Form.Group>
+          <Form.Group className="mb-3" controlId="exampleForm.ControlInput2">
+            <Form.Label>Replace</Form.Label>
+            <Form.Control type="text" placeholder="Replace text" onChange={setReplaceText} />
+          </Form.Group>
+          <Button variant="primary" onClick={() => props.findAndReplace(state)}>Execute</Button>
+        </Form>
+      </Modal.Body>
+    </Modal>
+  )
 }
 
 function SQLExecDialog(props: {show: boolean, onHide: () => void, text: string, database: string}) {
