@@ -492,10 +492,13 @@ const Statement = React.forwardRef<HTMLTextAreaElement, StatementProps>((props, 
   const URL_REGEX = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)/;
   const hyperlinkText = (inputText: string) => 
     inputText.split(" ")
-    .map(part =>
-      URL_REGEX.test(part) ? <>
-        <a href={part} target="_blank" rel="noreferrer">{part}</a>&nbsp;
-      </> : (part + " ")
+    .map((part, idx) =>
+      <React.Fragment key={idx}>
+        {URL_REGEX.test(part) ? <>
+              <a href={part} target="_blank" rel="noreferrer">{part}</a>&nbsp;
+          </> : (part + " ")
+        }
+      </React.Fragment>
     );
 
   return (
