@@ -744,6 +744,7 @@ function Home(props: {setID: (s: string) => void}) {
         <form onSubmit={handleSubmit} className="p-2">
           <p>Upload your file for import.</p>
           <p>Since this application is not very smart, <strong>name your file something unique to you, e.g. <code>otan_example.sql</code></strong>, or you may overwrite or view someone else's attempt.</p>
+          <p>INSERT and COPY statements will not appear.</p>
           <label className="mx-3">Choose file:</label>
           <input
             ref={inputRef}
