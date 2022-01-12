@@ -473,7 +473,7 @@ function FindAndReplaceDialog(props: {show: boolean, onHide: () => void, findAnd
             <Form.Label>Replace</Form.Label>
             <Form.Control type="text" placeholder="Replace text (use $1 for capture groups)" value={state.replace} onChange={setReplaceText} />
           </Form.Group>
-          <Form.Group className="mb-3" controlId="exampleForm.ControlInput2">
+          <Form.Group className="mb-3" controlId="exampleForm.ControlInput3">
             <Form.Label>Regex?</Form.Label>
             <Form.Check type="checkbox" checked={state.isRegex} onChange={setIsRegex} />
           </Form.Group>
