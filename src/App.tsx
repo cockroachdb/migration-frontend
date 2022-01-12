@@ -306,7 +306,7 @@ const ImportApp = (props: ImportAppProps) => {
           : ''
         }          
         <hr/>
-        {state.loaded ? <div>Last executed&nbsp;<Moment date={new Date(state.data.unix_nano / 1000000).toISOString()} fromNow /></div>: ''}
+        {state.loaded ? <div>Last imported&nbsp;<Moment date={new Date(state.data.unix_nano / 1000000).toISOString()} fromNow /></div>: ''}
       </Container>
 
       <Container className="p-4" fluid>
@@ -354,9 +354,8 @@ const ImportApp = (props: ImportAppProps) => {
 
       <footer className="fixed-bottom navbar-light bg-light">
         <Container className="m-2" fluid style={{textAlign: 'center'}}>
-          <ButtonGroup>
             {state.loaded ?
-              <p>
+              <ButtonGroup>
                 <Button variant="primary" onClick={handleSubmit}>Reimport</Button>
                 <DropdownButton
                   drop={'up'}
@@ -367,17 +366,19 @@ const ImportApp = (props: ImportAppProps) => {
                 >
                   <Dropdown.Item eventKey="undoAll">Revert to last import attempt</Dropdown.Item>
                   <Dropdown.Item eventKey="showSQLExec">Show current dump</Dropdown.Item>
+                  
                   <Dropdown.Divider />
-                  <Dropdown.Item eventKey="fixAll">Fix all</Dropdown.Item>
+                  
+                  <Dropdown.Header>Automagic fixers</Dropdown.Header>
+                  <Dropdown.Item eventKey="fixAll">Automatically fix all issues</Dropdown.Item>
                   <Dropdown.Item eventKey="deleteAllUnimplemented">Delete unimplemented statements</Dropdown.Item>
                   <Dropdown.Item eventKey="fixAllSequences">Fix all sequences</Dropdown.Item>
                 </DropdownButton>
                 <Button variant="secondary" onClick={handleSave(exportText, state.data.id + '_export.sql')}>Save as SQL File</Button>
-                <Button variant="outline-secondary" onClick={() => setShowSQLExec(true)} disabled={state.data.import_metadata.database === ''}>Execute SQL</Button>
+                <Button variant="outline-secondary" onClick={() => setShowSQLExec(true)} disabled={state.data.import_metadata.database === ''}>Query Current State</Button>
                 <Button variant="danger" onClick={handleNextStatementWithIssue}>Scroll to Next Issue</Button>
-              </p>
+              </ButtonGroup>
             : <span className="visually-hidden">Loading...</span>}
-          </ButtonGroup>
         </Container>
       </footer>
     </>
