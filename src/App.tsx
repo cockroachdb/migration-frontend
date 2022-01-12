@@ -257,7 +257,7 @@ const ImportApp = (props: ImportAppProps) => {
     pg.trim();
     var crdb = statement.cockroach;
     crdb.trim();
-    if (crdb.charAt(crdb.length - 1) != ';') {
+    if (crdb.charAt(crdb.length - 1) !== ';') {
       crdb += ";";
     }
     return '-- postgres: ' + pg + '\n' + crdb + '\n';
@@ -368,8 +368,8 @@ function SQLExecDialog(props: {show: boolean, onHide: () => void, text: string, 
   });
 
   React.useEffect(() => {
-    setSt({...st, text: props.text});
-  }, [props.text])
+    setSt((s) => ({...s, text: props.text}));
+  }, [props.text]);
 
   const handleTextAreaChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => 
     setSt({...st, text: event.target.value});
@@ -412,13 +412,13 @@ function SQLExecDialog(props: {show: boolean, onHide: () => void, text: string, 
             <Table striped bordered hover>
               <thead>
                 <tr>
-                  {st.results.columns.map((c) => <th>{c}</th>)}
+                  {st.results.columns.map((c, idx) => <th key={idx}>{c}</th>)}
                 </tr>
               </thead>
               <tbody>
-                {st.results.rows.map((row) => 
-                  <tr>
-                    {row.map((c) => <td>{c}</td>)}
+                {st.results.rows.map((row, idx) => 
+                  <tr key={idx}>
+                    {row.map((c, cidx) => <td key={cidx}>{c}</td>)}
                   </tr>
                 )}
               </tbody>
