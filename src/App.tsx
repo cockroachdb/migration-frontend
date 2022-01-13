@@ -674,6 +674,7 @@ function StatementsSummary(props: {statements: ImportStatement[]}) {
   var numInfo = 0;
 
   const unimplementedIssueCount = new Map<string, number>();
+  var numNoIssueUnimplemented = 0;
   const re = /issue-v\/([0-9]*)/i;
 
   props.statements.forEach((statement) => {
@@ -693,6 +694,8 @@ function StatementsSummary(props: {statements: ImportStatement[]}) {
                 const issue = match[1];
                 const curr = unimplementedIssueCount.get(issue);
                 unimplementedIssueCount.set(issue, curr != null ? curr + 1: 1);
+              } else {
+                numNoIssueUnimplemented++;
               }
             }
         }
@@ -723,7 +726,7 @@ function StatementsSummary(props: {statements: ImportStatement[]}) {
   }
 
   var totalTime = 0;
-  var totalUncatFixes = numDanger;
+  var totalUncatFixes = numDanger - numNoIssueUnimplemented;
   const estimatedTimeList = (<ul>
     {unimplementedIssueCountArr.map(([issue, count], idx) => {
       const estimate = estimatedEffort[issue];
@@ -738,7 +741,8 @@ function StatementsSummary(props: {statements: ImportStatement[]}) {
         </>: ''}
       </li>);
     })}
-    <li>{totalUncatFixes} uncategorised items.</li>
+    {numNoIssueUnimplemented > 0 ? <li>{numNoIssueUnimplemented} uncategorised unimplemented errors.</li>: ''}
+    {totalUncatFixes > 0 ? <li>{totalUncatFixes} uncategorised items.</li>: ''}
   </ul>)
 
   return (
