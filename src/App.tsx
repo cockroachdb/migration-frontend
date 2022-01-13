@@ -557,7 +557,7 @@ function SQLExecDialog(props: {show: boolean, onHide: () => void, text: string, 
         setSt({...st, results: response.data});
       }
     ).catch(
-      error => alert(`Error: ${error}`)
+      error => setSt({...st, text: error})
     );
   };
 
