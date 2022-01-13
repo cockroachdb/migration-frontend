@@ -311,14 +311,13 @@ const ImportApp = (props: ImportAppProps) => {
   }
 
   const exportText = state.data.import_metadata.statements != null ? state.data.import_metadata.statements.map((statement) => {
-    const pg = statement.original.split("\n")[0];
-    pg.trim();
+    const pg = statement.original.split("\n").map(x => `-- ${x}`).join("\n")
     var crdb = statement.cockroach;
     crdb.trim();
     if (crdb.charAt(crdb.length - 1) !== ';') {
       crdb += ";";
     }
-    return '-- postgres: ' + pg + '\n' + crdb + '\n';
+    return '-- postgres:\n' + pg + '\n' + crdb + '\n';
   }).join('\n') : '';
 
   const setFindAndReplace = (b: boolean) => setState({...state, showFindAndReplace: b});
