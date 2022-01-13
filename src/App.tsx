@@ -157,10 +157,12 @@ const ImportApp = (props: ImportAppProps) => {
     );
   }
 
-  const handleIssueDelete = (statementIdx: number, issueIdx: number) => {
+  const handleIssueDelete = (statementIdx: number, issueIdx: number | null) => {
     const newState = state.data;
     newState.import_metadata.statements[statementIdx].cockroach = '';
-    newState.import_metadata.statements[statementIdx].issues.splice(issueIdx, 1);
+    if (issueIdx != null) {
+      newState.import_metadata.statements[statementIdx].issues.splice(issueIdx, 1);
+    }
     setState({...supplyRefs({...state, data: newState}), activeStatement: statementIdx});
   }
 
@@ -578,7 +580,7 @@ interface StatementProps {
   idx: number;
   database: string;
   callbacks: {
-    handleIssueDelete: (statementIdx: number, issueIdx: number) => void;
+    handleIssueDelete: (statementIdx: number, issueIdx: number | null) => void;
     handleFixSequence: (statementIdx: number, issueIdentifier: string) => void;
     handleTextAreaChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
     handleAddStatement: (idx: number) => void;
@@ -606,7 +608,7 @@ const Statement = React.forwardRef<HTMLTextAreaElement, StatementProps>((props, 
     return color;
   }
 
-  const onDelete = (idx: number) =>
+  const onDelete = (idx: number | null) =>
     () => props.callbacks.handleIssueDelete(props.idx, idx);
   const onFixSequence = (statementIdx: number, issueIdentifier: string) => 
     () => props.callbacks.handleFixSequence(statementIdx, issueIdentifier)
@@ -656,9 +658,10 @@ const Statement = React.forwardRef<HTMLTextAreaElement, StatementProps>((props, 
         />
 
         <p>
-          <Button variant="outline-primary" onClick={() => props.callbacks.handleAddStatement(props.idx)}>Insert Statement Before</Button>
-          <Button variant="outline-primary" onClick={() => props.callbacks.handleAddStatement(props.idx + 1)}>Insert Statement After</Button>
-          {props.database !== "" ? <Button variant="outline-primary" onClick={() => props.callbacks.setShowSQLExec(true, statement.cockroach)}>Execute</Button> : ''}
+          <Button variant="outline-primary" onClick={() => props.callbacks.handleAddStatement(props.idx)}>Insert Before</Button>
+          <Button variant="outline-primary" onClick={() => props.callbacks.handleAddStatement(props.idx + 1)}>Insert After</Button>
+          <Button variant="outline-secondary" onClick={onDelete(null)}>Delete</Button>
+          <Button variant="outline-primary" onClick={() => props.callbacks.setShowSQLExec(true, statement.cockroach)} disabled={props.database !== ""}>Execute</Button>
         </p>
       </Col>
     </Row>
