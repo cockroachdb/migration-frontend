@@ -783,6 +783,10 @@ function StatementsSummary(props: {statements: ImportStatement[]}) {
     '74780': {
       issue: 'grant privilege on sequences',
       estimate: 1000 * 60,
+    },
+    '28296': {
+      issue: 'trigger',
+      estimate:  1000 * 60 * 60 * 24 * 7,
     }
   }
 
