@@ -657,11 +657,14 @@ const Statement = React.forwardRef<HTMLTextAreaElement, StatementProps>((props, 
           rows={statement.cockroach.split('\n').length + 1}
         />
 
-        <p>
-          <Button variant="outline-primary" onClick={() => props.callbacks.handleAddStatement(props.idx)}>Insert Before</Button>
-          <Button variant="outline-primary" onClick={() => props.callbacks.handleAddStatement(props.idx + 1)}>Insert After</Button>
-          <Button variant="outline-secondary" onClick={onDelete(null)}>Delete</Button>
-          <Button variant="outline-primary" onClick={() => props.callbacks.setShowSQLExec(true, statement.cockroach)} disabled={props.database !== ""}>Execute</Button>
+        <p style={{textAlign: 'center'}}>
+
+          <ButtonGroup>
+            <Button variant="outline-primary" onClick={() => props.callbacks.handleAddStatement(props.idx)}>Insert Before</Button>
+            <Button variant="outline-primary" onClick={() => props.callbacks.handleAddStatement(props.idx + 1)}>Insert After</Button>
+            <Button variant="outline-secondary" onClick={onDelete(null)}>Delete</Button>
+            <Button variant="outline-primary" onClick={() => props.callbacks.setShowSQLExec(true, statement.cockroach)} disabled={props.database !== ""}>Execute</Button>
+          </ButtonGroup>
         </p>
       </Col>
     </Row>
