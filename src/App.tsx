@@ -421,7 +421,7 @@ const ImportApp = (props: ImportAppProps) => {
                   <Dropdown.Item eventKey="deleteAllUnimplemented">Delete unimplemented statements</Dropdown.Item>
                   <Dropdown.Item eventKey="fixAllSequences">Fix all sequences</Dropdown.Item>
                 </DropdownButton>
-                <Button variant="secondary" onClick={handleSave(exportText, state.data.id + '_export.sql')}>Save as SQL File</Button>
+                <Button variant="secondary" onClick={handleSave(exportText, state.data.id + '_export.sql')}>Export SQL File</Button>
                 <Button variant="outline-secondary" onClick={() => setShowSQLExec(true)} disabled={state.data.import_metadata.database === ''}>Query Current State</Button>
                 <Button variant="danger" onClick={handleNextStatementWithIssue}>Scroll to Next Issue</Button>
               </ButtonGroup>
@@ -695,7 +695,10 @@ function StatementsSummary(props: {statements: ImportStatement[]}) {
 }
 
 function Home(props: {setID: (s: string) => void}) {
-  const [uploadedFileName, setUploadedFileName] = React.useState<string | null>(null);
+  const [state, setState] = React.useState<{uploadedFileName: string | null, loading: boolean}>({
+    uploadedFileName: null,
+    loading: false,
+  });
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   const handleUpload = () => {
@@ -703,19 +706,19 @@ function Home(props: {setID: (s: string) => void}) {
   };
   const handleDisplayFileDetails = () => {
     inputRef.current?.files &&
-      setUploadedFileName(inputRef.current.files[0].name);
+      setState({...state, uploadedFileName: inputRef.current.files[0].name});
   };  
   let navigate = useNavigate();
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (inputRef.current == null || inputRef.current.files == null || uploadedFileName == null) {
-      console.error(`no input file`);
+    if (inputRef.current == null || inputRef.current.files == null || state.uploadedFileName == null) {
       return;
     }
+    setState({...state, loading: true});
     const formData = new FormData();
     formData.append("file", inputRef.current.files[0]);
-    formData.append("id", uploadedFileName);
+    formData.append("id", state.uploadedFileName);
     axios.post<Import>(
       "http://" + window.location.hostname + ":5050/upload",
       formData,
@@ -724,12 +727,14 @@ function Home(props: {setID: (s: string) => void}) {
       },
     ).then(
       response => {
-        console.log(response.data.id);
         props.setID(response.data.id);
         navigate("/import"); // ?id=" + response.data.id);
       }
     ).catch(
-      error => console.error(`Error: ${error}`)
+      error => {
+        alert(`Error: ${error}`);
+        setState({...state, loading: false});
+      }
     );
   }
 
@@ -754,12 +759,17 @@ function Home(props: {setID: (s: string) => void}) {
           />
           <button
             onClick={handleUpload}
-            className={`btn btn-outline-${uploadedFileName ? "success" : "primary"}`}
+            className={`btn btn-outline-${state.uploadedFileName ? "success" : "primary"}`}
           >
-            {uploadedFileName ? uploadedFileName : "Upload"}
+            {state.uploadedFileName ? state.uploadedFileName : "Upload"}
           </button>
           <br/>
-          <Button variant="primary" type="submit" disabled={uploadedFileName === null}>Import</Button>
+          {state.loading ? 
+            <Spinner animation="border" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </Spinner> :
+            <Button variant="primary" type="submit" disabled={state.uploadedFileName === null}>Import</Button>
+          }
         </form>
 
         <hr/>
