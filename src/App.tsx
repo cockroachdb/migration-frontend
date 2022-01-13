@@ -213,10 +213,54 @@ const ImportApp = (props: ImportAppProps) => {
     return elems.length;
   }
 
+
+
+  const handleAddUser = (user: string) => {
+    const newState = state.data;
+    newState.import_metadata.statements.splice(0, 0, {
+      original: '-- newly added statement',
+      cockroach: `CREATE USER IF NOT EXISTS "${user}"`,
+      issues: [],
+    }, {
+      original: '-- newly added statement',
+      cockroach: `GRANT admin TO "${user}"`,
+      issues: [],
+    })
+    newState.import_metadata.statements.forEach((statement, statementIdx) => {
+      if (statement.issues != null) {
+        statement.issues.forEach((issue, issueIdx) => {
+          if (issue.type === 'missing_user') {
+            // concurrent array deletion bug?
+            statement.issues.splice(issueIdx, 1);
+          }
+        });
+      }
+    })
+    setState({...supplyRefs({...state, data: newState}), activeStatement: state.activeStatement});
+  }
+
+  const handleAddAllUsers = () => alert(`${handleAddAllUsersInternal()} users added`);
+
+  const handleAddAllUsersInternal = (): number =>  {
+    const users = new Set<string>();
+    state.data.import_metadata.statements.forEach((statement) => {
+      if (statement.issues != null) {
+        statement.issues.forEach((issue) => {
+          if (issue.type === 'missing_user') {
+            users.add(issue.id);
+          }
+        });
+      }
+    });
+    users.forEach(user => handleAddUser(user));
+    return users.size
+  }
+
   const fixAll = () => {
     var text = '';
     text += `${fixAllSequencesInternal()} sequences converted to UUID\n`;
     text += `${deleteAllUnimplementedInternal()} unimplemented statements deleted\n`;
+    text += `${handleAddAllUsersInternal()} users added\n`;
     alert(text);
   }
 
@@ -329,6 +373,9 @@ const ImportApp = (props: ImportAppProps) => {
     case "findAndReplace":
       setFindAndReplace(true);
       break;
+    case "handleAddAllUsers":
+      handleAddAllUsers();
+      break;
     default:
       alert("unknown action: " + key)
     }
@@ -383,6 +430,7 @@ const ImportApp = (props: ImportAppProps) => {
                   handleAddStatement: handleAddStatement,
                   setShowSQLExec: setShowSQLExec,
                   setActiveStatement: () => setActiveStatement(idx),
+                  handleAddUser: handleAddUser,
                 }}
               />
             )) : (
@@ -420,6 +468,7 @@ const ImportApp = (props: ImportAppProps) => {
 
                   <Dropdown.Header>Automagic fixers</Dropdown.Header>
                   <Dropdown.Item eventKey="fixAll">Automatically fix all issues</Dropdown.Item>
+                  <Dropdown.Item eventKey="handleAddAllUsers">Add missing users</Dropdown.Item>
                   <Dropdown.Item eventKey="deleteAllUnimplemented">Delete unimplemented statements</Dropdown.Item>
                   <Dropdown.Item eventKey="fixAllSequences">Fix all sequences</Dropdown.Item>
                 </DropdownButton>
@@ -586,6 +635,7 @@ interface StatementProps {
     handleAddStatement: (idx: number) => void;
     setShowSQLExec: (showSQLExec: boolean, text?: string) => void;
     setActiveStatement: () => void;
+    handleAddUser: (user: string) => void;
   }
 }
 
@@ -643,6 +693,9 @@ const Statement = React.forwardRef<HTMLTextAreaElement, StatementProps>((props, 
               {issue.type === "sequence" ? (
                 <Button variant="outline-info" onClick={onFixSequence(props.idx, issue.id)}>Make UUID</Button>
               ): ''}
+              {issue.type === "missing_user" ? (
+                <Button variant="outline-info" onClick={() => props.callbacks.handleAddUser(issue.id)}>Add user "{issue.id}"</Button>
+              ): ''}
             </li>
           )): ''}
         </ul>
@@ -658,7 +711,6 @@ const Statement = React.forwardRef<HTMLTextAreaElement, StatementProps>((props, 
         />
 
         <p style={{textAlign: 'center'}}>
-
           <ButtonGroup>
             <Button variant="outline-primary" onClick={() => props.callbacks.handleAddStatement(props.idx)}>Insert Before</Button>
             <Button variant="outline-primary" onClick={() => props.callbacks.handleAddStatement(props.idx + 1)}>Insert After</Button>
@@ -678,6 +730,7 @@ function StatementsSummary(props: {statements: ImportStatement[]}) {
 
   const unimplementedIssueCount = new Map<string, number>();
   var numNoIssueUnimplemented = 0;
+  var numMissingUser = 0;
   const re = /issue-v\/([0-9]*)/i;
 
   props.statements.forEach((statement) => {
@@ -691,7 +744,8 @@ function StatementsSummary(props: {statements: ImportStatement[]}) {
           default:
             numDanger++;
 
-            if (issue.type === "unimplemented") {
+          switch (issue.type) {
+            case "unimplemented":
               const match = issue.text.match(re);
               if (match != null) {
                 const issue = match[1];
@@ -700,7 +754,11 @@ function StatementsSummary(props: {statements: ImportStatement[]}) {
               } else {
                 numNoIssueUnimplemented++;
               }
-            }
+              break;
+            case "missing_user":
+              numMissingUser++;
+              break;
+          }
         }
       })
     }
@@ -729,7 +787,7 @@ function StatementsSummary(props: {statements: ImportStatement[]}) {
   }
 
   var totalTime = 0;
-  var totalUncatFixes = numDanger - numNoIssueUnimplemented;
+  var totalUncatFixes = numDanger - numNoIssueUnimplemented - numMissingUser;
   const estimatedTimeList = (<ul>
     {unimplementedIssueCountArr.map(([issue, count], idx) => {
       const estimate = estimatedEffort[issue];
@@ -745,6 +803,7 @@ function StatementsSummary(props: {statements: ImportStatement[]}) {
       </li>);
     })}
     {numNoIssueUnimplemented > 0 ? <li>{numNoIssueUnimplemented} uncategorised unimplemented errors.</li>: ''}
+    {numMissingUser > 0 ? <li>{numMissingUser} statements with missing user/role in database.</li> : ''}
     {totalUncatFixes > 0 ? <li>{totalUncatFixes} uncategorised items.</li>: ''}
   </ul>)
 
