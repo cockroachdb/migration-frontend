@@ -200,7 +200,7 @@ const ImportApp = (props: ImportAppProps) => {
       statementIdx: number;
       id: string;
     }[] = [];
-    
+
     state.data.import_metadata.statements.forEach((statement, statementIdx) => {
       if (statement.issues != null) {
         statement.issues.forEach((issue) => {
@@ -715,7 +715,7 @@ const Statement = React.forwardRef<HTMLTextAreaElement, StatementProps>((props, 
             <Button variant="outline-primary" onClick={() => props.callbacks.handleAddStatement(props.idx)}>Insert Before</Button>
             <Button variant="outline-primary" onClick={() => props.callbacks.handleAddStatement(props.idx + 1)}>Insert After</Button>
             <Button variant="outline-secondary" onClick={onDelete(null)}>Delete</Button>
-            <Button variant="outline-primary" onClick={() => props.callbacks.setShowSQLExec(true, statement.cockroach)} disabled={props.database !== ""}>Execute</Button>
+            <Button variant="outline-primary" onClick={() => props.callbacks.setShowSQLExec(true, statement.cockroach)} disabled={props.database === ""}>Execute</Button>
           </ButtonGroup>
         </p>
       </Col>
