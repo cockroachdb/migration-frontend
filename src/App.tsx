@@ -200,6 +200,7 @@ const ImportApp = (props: ImportAppProps) => {
       statementIdx: number;
       id: string;
     }[] = [];
+    
     state.data.import_metadata.statements.forEach((statement, statementIdx) => {
       if (statement.issues != null) {
         statement.issues.forEach((issue) => {
@@ -314,7 +315,7 @@ const ImportApp = (props: ImportAppProps) => {
     const pg = statement.original.split("\n").map(x => `-- ${x}`).join("\n")
     var crdb = statement.cockroach;
     crdb.trim();
-    if (crdb.charAt(crdb.length - 1) !== ';') {
+    if (crdb.length > 0 && crdb.charAt(crdb.length - 1) !== ';') {
       crdb += ";";
     }
     return '-- postgres:\n' + pg + '\n' + crdb + '\n';
