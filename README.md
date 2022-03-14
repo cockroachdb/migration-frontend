@@ -1,3 +1,7 @@
-# Migration Front-end Prototype
+# Migration Frontend
 
-No front-end skills, YOLO.
+The future of migrating to CockroachDB is here!
+
+## Setup
+
+TODO
