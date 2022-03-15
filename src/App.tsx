@@ -14,11 +14,14 @@ import Modal from 'react-bootstrap/Modal';
 import Table from 'react-bootstrap/Table';
 import './App.scss';
 import Moment from 'react-moment';
+import { Provider } from "react-redux";
 import { saveAs } from 'file-saver';
 
 import { useNavigate, BrowserRouter, Route, Routes } from 'react-router-dom';
 
 import axios from 'axios';
+
+import store from "./state/store";
 
 
 interface Import {
@@ -916,14 +919,16 @@ function App() {
   };
 
   return (
-    <Container className="p-3">
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Home setID={setID} />} />
-          <Route path="/import" element={<ImportApp id={id} />} />
-        </Routes>
-      </BrowserRouter>
-    </Container>
+    <Provider store={store}>
+      <Container className="p-3">
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Home setID={setID} />} />
+            <Route path="/import" element={<ImportApp id={id} />} />
+          </Routes>
+        </BrowserRouter>
+      </Container>
+    </Provider>
   );
 }
 
