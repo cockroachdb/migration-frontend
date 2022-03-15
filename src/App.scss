@@ -1,0 +1,32 @@
+// Source Sans Pro import
+@import url('https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,wght@0,400;0,600;1,400;1,600&display=swap');
+// Roboto Mono import
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600&display=swap');
+// Cockroach Labs Design Tokens
+@import "~@cockroachlabs/design-tokens/dist/web/tokens";
+
+body {
+  background-color: $color-core-neutral-1;
+  font-family: "Source Sans Pro", sans-serif;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+.issue-level-danger {
+    color: $color-base-red;
+}
+
+.issue-level-info {
+    color: $color-base-blue;
+}
+
+.sticky-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    text-align: center;
+    width: 100%;
+    height: 54px;
+    background-color: $color-core-neutral-1;
+}

@@ -12,7 +12,7 @@ import Button from 'react-bootstrap/Button';
 import Spinner from 'react-bootstrap/Spinner';
 import Modal from 'react-bootstrap/Modal';
 import Table from 'react-bootstrap/Table';
-import './App.css';
+import './App.scss';
 import Moment from 'react-moment';
 import { saveAs } from 'file-saver';
 
@@ -444,7 +444,7 @@ const ImportApp = (props: ImportAppProps) => {
           </form>
       </Container>
 
-      <footer className="fixed-bottom navbar-light bg-light">
+      <footer className="fixed-bottom sticky-footer">
         <Container className="m-2" fluid style={{textAlign: 'center'}}>
             {state.loaded ?
               <ButtonGroup>
