@@ -1,7 +1,7 @@
 import React from "react";
 import { Row, Col, Button, ButtonGroup } from 'react-bootstrap';
 
-import type { ImportStatement, ImportIssue } from "../import";
+import type { ImportStatement, ImportIssue } from "../../common/import";
 
 interface StatementProps {
   statement: ImportStatement;

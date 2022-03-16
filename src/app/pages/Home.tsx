@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Container, Spinner, Button } from "react-bootstrap";
 import axios from "axios";
 
-import type { Import } from "../import";
+import type { Import } from "../../common/import";
 
 export interface HomeProps {
   setID: (s: string) => void;
