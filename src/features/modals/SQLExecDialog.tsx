@@ -2,11 +2,12 @@ import type React from "react";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { Modal, Button, Table } from "react-bootstrap";
+import { useAppDispatch } from "../../app/hooks";
+import { modalSlice } from "./modalSlice";
 
 
 interface SQLExecDialogProps {
   show: boolean;
-  onHide: () => void;
   text: string;
   database: string;
 }
@@ -23,6 +24,7 @@ interface SQLExecState {
 }
 
 export const SQLExecDialog: React.FC<SQLExecDialogProps> = (props) => {
+  const dispatch = useAppDispatch();
   const [st, setSt] = useState<SQLExecState>({
     text: props.text,
     results: null,
@@ -50,7 +52,7 @@ export const SQLExecDialog: React.FC<SQLExecDialogProps> = (props) => {
 
   return (
     <Modal show={props.show} onHide={() => {
-      props.onHide();
+      dispatch(modalSlice.actions.hideAll());
       setSt({ ...st, results: null });
     }} >
       <Modal.Header closeButton>
