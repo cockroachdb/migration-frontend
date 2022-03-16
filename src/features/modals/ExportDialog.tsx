@@ -1,15 +1,19 @@
+import { useCallback } from "react";
 import { Modal, Button } from "react-bootstrap";
+import { useAppDispatch } from "../../app/hooks";
+import { modalSlice } from "./modalSlice";
 
 interface ExportDialogProps {
-  onHide: () => void;
   show: boolean;
   exportText: string;
   handleSave: () => void;
 }
 
 export const ExportDialog: React.FC<ExportDialogProps> = (props) => {
+  const dispatch = useAppDispatch();
+  const hideModal = useCallback(() => dispatch(modalSlice.actions.hideAll()), [dispatch]);
   return (
-    <Modal show={props.show} onHide={props.onHide}>
+    <Modal show={props.show} onHide={hideModal}>
       <Modal.Header closeButton>
         <Modal.Title>Raw Import</Modal.Title>
       </Modal.Header>
