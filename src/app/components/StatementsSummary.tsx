@@ -1,6 +1,6 @@
 import Moment from "react-moment";
 
-import type { ImportStatement } from "../import";
+import type { ImportStatement } from "../../common/import";
 
 interface StatementsSummaryProps {
   statements: ImportStatement[];

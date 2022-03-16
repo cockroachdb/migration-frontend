@@ -10,7 +10,7 @@ import { FindAndReplaceDialog } from "../components/FindAndReplaceDialog";
 import { SQLExecDialog } from "../components/SQLExecDialog";
 import { ExportDialog } from "../components/ExportDialog";
 
-import type { Import, ImportStatement } from "../import";
+import type { Import, ImportStatement } from "../../common/import";
 import type { FindAndReplaceArgs } from "../components/FindAndReplaceDialog";
 
 interface ImportPageState {
