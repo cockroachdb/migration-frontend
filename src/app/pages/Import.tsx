@@ -6,12 +6,12 @@ import Moment from "react-moment";
 
 import { Statement } from "../components/Statement";
 import { StatementsSummary } from "../components/StatementsSummary";
-import { FindAndReplaceDialog } from "../components/FindAndReplaceDialog";
-import { SQLExecDialog } from "../components/SQLExecDialog";
-import { ExportDialog } from "../components/ExportDialog";
+import { FindAndReplaceDialog } from "../../features/modals/FindAndReplaceDialog";
+import { SQLExecDialog } from "../../features/modals/SQLExecDialog";
+import { ExportDialog } from "../../features/modals/ExportDialog";
 
 import type { Import, ImportStatement } from "../../common/import";
-import type { FindAndReplaceArgs } from "../components/FindAndReplaceDialog";
+import type { FindAndReplaceArgs } from "../../features/modals/FindAndReplaceDialog";
 
 interface ImportPageState {
   data: Import;
