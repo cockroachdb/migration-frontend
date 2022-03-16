@@ -12,13 +12,14 @@ import { ExportDialog } from "../../features/modals/ExportDialog";
 
 import type { Import, ImportStatement } from "../../common/import";
 import type { FindAndReplaceArgs } from "../../features/modals/FindAndReplaceDialog";
+import { modalSlice, getVisibleModal, isFindReplaceModal} from "../../features/modals/modalSlice";
+import { useAppDispatch, useAppSelector } from "../hooks";
 
 interface ImportPageState {
   data: Import;
   loaded: boolean;
   showExport: boolean;
   showSQLExec: boolean;
-  showFindAndReplace: boolean;
   sqlExecText: string;
 
   activeStatement: number;
@@ -34,7 +35,6 @@ export const ImportPage = (props: ImportPageProps) => {
     loaded: false,
     showExport: false,
     showSQLExec: false,
-    showFindAndReplace: false,
     sqlExecText: '',
     data: {
       id: props.id,
@@ -49,6 +49,9 @@ export const ImportPage = (props: ImportPageProps) => {
     activeStatement: -1,
     statementRefs: [],
   });
+
+  const dispatch = useAppDispatch();
+  const visibleModal = useAppSelector(getVisibleModal);
 
   const supplyRefs = (data: ImportPageState) => {
     const refs: React.RefObject<HTMLTextAreaElement>[] = [];
@@ -281,7 +284,13 @@ export const ImportPage = (props: ImportPageProps) => {
     return '-- postgres:\n' + pg + '\n' + crdb + '\n';
   }).join('\n') : '';
 
-  const setFindAndReplace = (b: boolean) => setState({...state, showFindAndReplace: b});
+  const setFindAndReplace = (visible: boolean) => {
+    if (visible) {
+      dispatch(modalSlice.actions.showFindReplace());
+    } else {
+      dispatch(modalSlice.actions.hideAll());
+    }
+  }
 
   const findAndReplace = (args: FindAndReplaceArgs) => {
     if (args.find !== '') {
@@ -364,8 +373,7 @@ export const ImportPage = (props: ImportPageProps) => {
           <>
             <ExportDialog show={state.showExport} onHide={() => setShowExport(false)} exportText={exportText} handleSave={handleSave(exportText, state.data.id + '_export.sql')} />
             <FindAndReplaceDialog
-              show={state.showFindAndReplace}
-              onHide={() => setFindAndReplace(false)}
+              show={isFindReplaceModal(visibleModal)}
               findAndReplace={findAndReplace}/>
             <SQLExecDialog show={state.showSQLExec} onHide={() => setShowSQLExec(false)} text={state.sqlExecText} database={state.data.import_metadata.database} />
           </>

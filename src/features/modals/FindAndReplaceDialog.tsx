@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Form, Modal, Button } from 'react-bootstrap';
+import { useAppDispatch } from "../../app/hooks";
+import { modalSlice } from "./modalSlice";
 
 export interface FindAndReplaceDialogProps {
   show: boolean;
-  onHide: () => void;
   findAndReplace: (args: FindAndReplaceArgs) => void;
 }
 
@@ -20,6 +21,9 @@ export const FindAndReplaceDialog: React.FC<FindAndReplaceDialogProps> = (props)
     isRegex: false,
   });
 
+  const dispatch = useAppDispatch();
+  const hideModal = useCallback(() => dispatch(modalSlice.actions.hideAll()), [dispatch]);
+
   const setFindText = (event: React.ChangeEvent<HTMLInputElement>) =>
     setState({ ...state, find: event.target.value });
   const setReplaceText = (event: React.ChangeEvent<HTMLInputElement>) =>
@@ -28,7 +32,7 @@ export const FindAndReplaceDialog: React.FC<FindAndReplaceDialogProps> = (props)
     setState({ ...state, isRegex: event.target.checked });
 
   return (
-    <Modal show={props.show} onHide={props.onHide} >
+    <Modal show={props.show} onHide={hideModal} >
       <Modal.Header closeButton>
         <Modal.Title>Find and Replace</Modal.Title>
       </Modal.Header>
