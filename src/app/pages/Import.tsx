@@ -12,13 +12,12 @@ import { ExportDialog } from "../../features/modals/ExportDialog";
 
 import type { Import, ImportStatement } from "../../common/import";
 import type { FindAndReplaceArgs } from "../../features/modals/FindAndReplaceDialog";
-import { modalSlice, getVisibleModal, isFindReplaceModal} from "../../features/modals/modalSlice";
+import { modalSlice, getVisibleModal, isFindReplaceModal, isExportModal} from "../../features/modals/modalSlice";
 import { useAppDispatch, useAppSelector } from "../hooks";
 
 interface ImportPageState {
   data: Import;
   loaded: boolean;
-  showExport: boolean;
   showSQLExec: boolean;
   sqlExecText: string;
 
@@ -33,7 +32,6 @@ interface ImportPageProps {
 export const ImportPage = (props: ImportPageProps) => {
   const [state, setState] = useState<ImportPageState>({
     loaded: false,
-    showExport: false,
     showSQLExec: false,
     sqlExecText: '',
     data: {
@@ -229,7 +227,11 @@ export const ImportPage = (props: ImportPageProps) => {
   }
 
   const setShowExport = (showExport: boolean) => {
-    setState({...state, showExport: showExport});
+    if (showExport) {
+      dispatch(modalSlice.actions.showExport());
+    } else {
+      dispatch(modalSlice.actions.hideAll());
+    }
   }
 
   const setShowSQLExec = (showSQLExec: boolean, text?: string) => {
@@ -371,7 +373,10 @@ export const ImportPage = (props: ImportPageProps) => {
       <Container className="p-4 m-2" fluid>
         {state.loaded ? 
           <>
-            <ExportDialog show={state.showExport} onHide={() => setShowExport(false)} exportText={exportText} handleSave={handleSave(exportText, state.data.id + '_export.sql')} />
+            <ExportDialog
+              show={isExportModal(visibleModal)}
+              exportText={exportText}
+              handleSave={handleSave(exportText, state.data.id + '_export.sql')}/>
             <FindAndReplaceDialog
               show={isFindReplaceModal(visibleModal)}
               findAndReplace={findAndReplace}/>
