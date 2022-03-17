@@ -124,7 +124,7 @@ export const ImportPage = (props: ImportPageProps) => {
 
   const deleteAllUnimplementedInternal = () => {
     const toDelete = statements.filter(stmt => stmt.issues && stmt.issues.some(issue => issue.type === "unimplemented"))
-    dispatch(importsSlice.actions.softDeleteStatements(toDelete));
+    dispatch(importsSlice.actions.toggleSoftDeletion(toDelete));
     return toDelete.length;
   }
 

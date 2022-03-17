@@ -49,7 +49,7 @@ export const importsSlice = createSlice({
       };
       importsAdapter.addOne(state, theImport);
     },
-    softDeleteStatements(state, action: PayloadAction<Statement[]>) {
+    toggleSoftDeletion(state, action: PayloadAction<Statement[]>) {
       const payload = action.payload;
       if (payload.length === 0) {
         console.warn("Attempted to mark 0 statements as deleted.");
@@ -62,7 +62,7 @@ export const importsSlice = createSlice({
 
       const modifiedStatements = payload.map(stmt => ({
         ...stmt,
-        deleted: true
+        deleted: !stmt.deleted,
       }));
 
       statementsAdapter.setMany(theImport.statements, modifiedStatements);
