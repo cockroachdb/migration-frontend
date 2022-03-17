@@ -15,6 +15,8 @@ import type { FindAndReplaceArgs } from "../../features/modals/FindAndReplaceDia
 import { modalSlice, getVisibleModal, isFindReplaceModal, isExportModal, isSqlModal, getRawSqlTextToExecute} from "../../features/modals/modalSlice";
 import { useAppDispatch, useAppSelector } from "../hooks";
 
+import { importsSlice, getSelectorsForImportId, importsSelectors } from "../../features/imports/importsSlice";
+
 interface ImportPageState {
   data: Import;
   loaded: boolean;
@@ -62,6 +64,7 @@ export const ImportPage = (props: ImportPageProps) => {
     setState({...state, loaded: false});
     axios.get<Import>("http://" + window.location.hostname + ":5050/get", { params: { 'id': props.id } }).then(
       response => {
+        dispatch(importsSlice.actions.importAdded(response.data));
         setState(supplyRefs({...state, loaded: true, data: response.data}));
       }
     ).catch(
@@ -353,6 +356,11 @@ export const ImportPage = (props: ImportPageProps) => {
     }
   }
 
+  const importId = state.data.id;
+  const currentImport = useAppSelector((state) => importsSelectors.selectById(state, importId));
+  const selectors = useAppSelector((state) => getSelectorsForImportId(state, importId));
+  const statements = useAppSelector((state) => selectors?.selectAll(state)) || [];
+
   return (
     <>
       <Container className="bg-light p-5">
@@ -363,7 +371,7 @@ export const ImportPage = (props: ImportPageProps) => {
           <>
             <Alert variant={state.data.import_metadata.status}>{state.data.import_metadata.message}</Alert>
             <hr/>
-            <StatementsSummary statements={state.data.import_metadata.statements} />
+            <StatementsSummary statements={statements} />
           </>
           : ''
         }          
@@ -392,12 +400,12 @@ export const ImportPage = (props: ImportPageProps) => {
             <Col xs={6}><strong>PostgreSQL statement</strong></Col>
             <Col xs={6}><strong>CockroachDB statement</strong></Col>
           </Row>
-          {state.loaded ?
-            state.data.import_metadata.statements.map((statement, idx) => (
+          {state.loaded && currentImport ?
+            statements.map((statement, idx) => (
               <Statement 
-                key={'r' + idx} 
+                key={statement.id} 
                 statement={statement} 
-                database={state.data.import_metadata.database}
+                database={currentImport.database}
                 idx={idx} 
                 ref={state.statementRefs[idx]}
                 callbacks={{
