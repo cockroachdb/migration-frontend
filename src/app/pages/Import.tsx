@@ -220,16 +220,6 @@ export const ImportPage = (props: ImportPageProps) => {
     }
   }
 
-  const handleAddStatement = (idx: number) => {
-    const newState = state.data;
-    newState.import_metadata.statements.splice(idx, 0, {
-      original: '-- newly added statement',
-      cockroach: '',
-      issues: [],
-    })
-    setState({...supplyRefs({...state, data: newState}), activeStatement: state.activeStatement});
-  }
-
   const handleSave = (exportText: string, fileName: string) => {
     return () => {
       saveAs(new File([exportText], fileName, {type: "text/plain;charset=utf-8"}));
@@ -389,7 +379,6 @@ export const ImportPage = (props: ImportPageProps) => {
                 callbacks={{
                   handleTextAreaChange: handleTextAreaChange(idx),
                   handleFixSequence: handleFixSequence,
-                  handleAddStatement: handleAddStatement,
                   setShowSQLExec: setShowSQLExec,
                   setActiveStatement: () => setActiveStatement(idx),
                   handleAddUser: handleAddUser,
