@@ -12,7 +12,6 @@ interface StatementProps {
   callbacks: {
     handleFixSequence: (statementIdx: number, issueIdentifier: string) => void;
     handleTextAreaChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
-    handleAddStatement: (idx: number) => void;
     setShowSQLExec: (showSQLExec: boolean, text?: string) => void;
     setActiveStatement: () => void;
     handleAddUser: (user: string) => void;
@@ -42,6 +41,22 @@ export const Statement = React.forwardRef<HTMLTextAreaElement, StatementProps>((
   const toggleDelete = useCallback(() => {
     dispatch(importsSlice.actions.toggleSoftDeletion([ statement ]));
   }, [ dispatch, statement ]);
+  const onInsertAbove = useCallback(() => {
+    dispatch(
+      importsSlice.actions.insertStatement({
+        importId: statement.importId,
+        index: props.idx,
+      })
+    );
+  }, [ dispatch, props.idx, statement.importId ]);
+  const onInsertBelow = useCallback(() => {
+    dispatch(
+      importsSlice.actions.insertStatement({
+        importId: statement.importId,
+        index: props.idx + 1,
+      })
+    );
+  }, [ dispatch, props.idx, statement.importId ]);
 
   const onFixSequence = (statementIdx: number, issueIdentifier: string) =>
     () => props.callbacks.handleFixSequence(statementIdx, issueIdentifier)
@@ -94,8 +109,8 @@ export const Statement = React.forwardRef<HTMLTextAreaElement, StatementProps>((
 
         <p style={{ textAlign: 'center' }}>
           <ButtonGroup>
-            <Button variant="outline-primary" onClick={() => props.callbacks.handleAddStatement(props.idx)}>Insert Before</Button>
-            <Button variant="outline-primary" onClick={() => props.callbacks.handleAddStatement(props.idx + 1)}>Insert After</Button>
+            <Button variant="outline-primary" onClick={onInsertAbove}>Insert Before</Button>
+            <Button variant="outline-primary" onClick={onInsertBelow}>Insert After</Button>
             <Button variant="outline-secondary" onClick={toggleDelete}>{statement.deleted ? "Restore" : "Delete"}</Button>
             <Button variant="outline-primary" onClick={() => props.callbacks.setShowSQLExec(true, statement.cockroach)} disabled={props.database === ""}>Execute</Button>
           </ButtonGroup>

@@ -67,6 +67,29 @@ export const importsSlice = createSlice({
 
       statementsAdapter.setMany(theImport.statements, modifiedStatements);
     },
+    insertStatement(state, action: PayloadAction<{ importId: string, index: number}>) {
+      const { importId, index } = action.payload;
+
+      const theImport = state.entities[importId];
+      if (!theImport) {
+        return;
+      }
+
+      const statement: Statement = {
+        importId: importId,
+        id: nanoid(),
+        original: "-- newly added statement",
+        cockroach: "",
+        deleted: false,
+        issues: [],
+      };
+      const nextState = statementsAdapter.addOne(theImport.statements, statement);
+      nextState.ids = [
+        ...nextState.ids.slice(0, index),
+        statement.id,
+        ...nextState.ids.slice(index, nextState.ids.length - 1),
+      ];
+    }
   },
 });
 
