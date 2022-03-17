@@ -39,8 +39,8 @@ export const Statement = React.forwardRef<HTMLTextAreaElement, StatementProps>((
   }
 
   const dispatch = useAppDispatch();
-  const onDelete = useCallback(() => {
-    dispatch(importsSlice.actions.softDeleteStatements([ statement ]));
+  const toggleDelete = useCallback(() => {
+    dispatch(importsSlice.actions.toggleSoftDeletion([ statement ]));
   }, [ dispatch, statement ]);
 
   const onFixSequence = (statementIdx: number, issueIdentifier: string) =>
@@ -70,7 +70,7 @@ export const Statement = React.forwardRef<HTMLTextAreaElement, StatementProps>((
             <li key={'li' + idx} className={"issue-level-" + issue.level}>
               {hyperlinkText(issue.text)}
               {issue.type === 'unimplemented' ? (
-                <Button variant="outline-danger" onClick={onDelete}>Delete Statement</Button>
+                <Button variant="outline-danger" onClick={toggleDelete}>{statement.deleted ? "Restore Statement" : "Delete statement"}</Button>
               ) : ''}
               {issue.type === "sequence" ? (
                 <Button variant="outline-info" onClick={onFixSequence(props.idx, issue.id)}>Make UUID</Button>
@@ -96,7 +96,7 @@ export const Statement = React.forwardRef<HTMLTextAreaElement, StatementProps>((
           <ButtonGroup>
             <Button variant="outline-primary" onClick={() => props.callbacks.handleAddStatement(props.idx)}>Insert Before</Button>
             <Button variant="outline-primary" onClick={() => props.callbacks.handleAddStatement(props.idx + 1)}>Insert After</Button>
-            <Button variant="outline-secondary" onClick={onDelete}>Delete</Button>
+            <Button variant="outline-secondary" onClick={toggleDelete}>{statement.deleted ? "Restore" : "Delete"}</Button>
             <Button variant="outline-primary" onClick={() => props.callbacks.setShowSQLExec(true, statement.cockroach)} disabled={props.database === ""}>Execute</Button>
           </ButtonGroup>
         </p>
