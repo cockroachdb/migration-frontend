@@ -118,36 +118,14 @@ export const ImportPage = (props: ImportPageProps) => {
     );
   }
 
-  const handleIssueDelete = (statementIdx: number, issueIdx: number | null) => {
-    const newState = state.data;
-    newState.import_metadata.statements[statementIdx].cockroach = '';
-    if (issueIdx != null) {
-      newState.import_metadata.statements[statementIdx].issues.splice(issueIdx, 1);
-    }
-    setState({...supplyRefs({...state, data: newState}), activeStatement: statementIdx});
-  }
-
   const deleteAllUnimplemented = () => {  
     alert(`${deleteAllUnimplementedInternal()} statements deleted!`);
   }
 
   const deleteAllUnimplementedInternal = () => {
-    // This is bad but w/e.
-    const elems: {
-      statementIdx: number;
-      issueIdx: number;
-    }[] = [];
-    state.data.import_metadata.statements.forEach((statement, statementIdx) => {
-      if (statement.issues != null) {
-        statement.issues.forEach((issue, issueIdx) => {
-          if (issue.type === 'unimplemented') {
-            elems.push({statementIdx: statementIdx, issueIdx: issueIdx});
-          }
-        })
-      }
-    })
-    elems.forEach((elem) => handleIssueDelete(elem.statementIdx, elem.issueIdx));
-    return elems.length;
+    const toDelete = statements.filter(stmt => stmt.issues && stmt.issues.some(issue => issue.type === "unimplemented"))
+    dispatch(importsSlice.actions.softDeleteStatements(toDelete));
+    return toDelete.length;
   }
 
 
@@ -409,7 +387,6 @@ export const ImportPage = (props: ImportPageProps) => {
                 idx={idx} 
                 ref={state.statementRefs[idx]}
                 callbacks={{
-                  handleIssueDelete: handleIssueDelete,
                   handleTextAreaChange: handleTextAreaChange(idx),
                   handleFixSequence: handleFixSequence,
                   handleAddStatement: handleAddStatement,

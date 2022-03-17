@@ -1,14 +1,15 @@
-import React from "react";
+import React, { useCallback } from "react";
 import { Row, Col, Button, ButtonGroup } from 'react-bootstrap';
 
-import type { ImportStatement, ImportIssue } from "../../common/import";
+import type { ImportIssue } from "../../common/import";
+import { importsSlice, Statement as StatementType } from "../../features/imports/importsSlice";
+import { useAppDispatch } from "../hooks";
 
 interface StatementProps {
-  statement: ImportStatement;
+  statement: StatementType;
   idx: number;
   database: string;
   callbacks: {
-    handleIssueDelete: (statementIdx: number, issueIdx: number | null) => void;
     handleFixSequence: (statementIdx: number, issueIdentifier: string) => void;
     handleTextAreaChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
     handleAddStatement: (idx: number) => void;
@@ -37,11 +38,13 @@ export const Statement = React.forwardRef<HTMLTextAreaElement, StatementProps>((
     return color;
   }
 
-  const onDelete = (idx: number | null) =>
-    () => props.callbacks.handleIssueDelete(props.idx, idx);
+  const dispatch = useAppDispatch();
+  const onDelete = useCallback(() => {
+    dispatch(importsSlice.actions.softDeleteStatements([ statement ]));
+  }, [ dispatch, statement ]);
+
   const onFixSequence = (statementIdx: number, issueIdentifier: string) =>
     () => props.callbacks.handleFixSequence(statementIdx, issueIdentifier)
-
 
   const URL_REGEX = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)/;
   const hyperlinkText = (inputText: string) =>
@@ -67,7 +70,7 @@ export const Statement = React.forwardRef<HTMLTextAreaElement, StatementProps>((
             <li key={'li' + idx} className={"issue-level-" + issue.level}>
               {hyperlinkText(issue.text)}
               {issue.type === 'unimplemented' ? (
-                <Button variant="outline-danger" onClick={onDelete(idx)}>Delete Statement</Button>
+                <Button variant="outline-danger" onClick={onDelete}>Delete Statement</Button>
               ) : ''}
               {issue.type === "sequence" ? (
                 <Button variant="outline-info" onClick={onFixSequence(props.idx, issue.id)}>Make UUID</Button>
@@ -81,9 +84,9 @@ export const Statement = React.forwardRef<HTMLTextAreaElement, StatementProps>((
         <textarea
           className="form-control"
           id={'ta' + props.idx}
-          value={statement.cockroach}
+          value={statement.deleted ? '' : statement.cockroach}
           ref={ref}
-          placeholder={statement.cockroach.trim() === '' ? '-- statement ignored' : ''}
+          placeholder={statement.deleted ? '-- statement ignored' : statement.cockroach}
           onChange={props.callbacks.handleTextAreaChange}
           onFocus={() => props.callbacks.setActiveStatement()}
           rows={statement.cockroach.split('\n').length + 1}
@@ -93,7 +96,7 @@ export const Statement = React.forwardRef<HTMLTextAreaElement, StatementProps>((
           <ButtonGroup>
             <Button variant="outline-primary" onClick={() => props.callbacks.handleAddStatement(props.idx)}>Insert Before</Button>
             <Button variant="outline-primary" onClick={() => props.callbacks.handleAddStatement(props.idx + 1)}>Insert After</Button>
-            <Button variant="outline-secondary" onClick={onDelete(null)}>Delete</Button>
+            <Button variant="outline-secondary" onClick={onDelete}>Delete</Button>
             <Button variant="outline-primary" onClick={() => props.callbacks.setShowSQLExec(true, statement.cockroach)} disabled={props.database === ""}>Execute</Button>
           </ButtonGroup>
         </p>
