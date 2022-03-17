@@ -1,9 +1,9 @@
 import Moment from "react-moment";
 
-import type { ImportStatement } from "../../common/import";
+import type { Statement } from "../../features/imports/importsSlice";
 
 interface StatementsSummaryProps {
-  statements: ImportStatement[];
+  statements: Statement[];
 }
 
 const estimatedEffort: Record<string, { issue: string; estimate: number; }> = {
@@ -30,7 +30,6 @@ const estimatedEffort: Record<string, { issue: string; estimate: number; }> = {
 };
 
 export const StatementsSummary: React.FC<StatementsSummaryProps> = (props) => {
-  var numStatements = 0;
   var numDanger = 0;
   var numInfo = 0;
 
@@ -40,35 +39,30 @@ export const StatementsSummary: React.FC<StatementsSummaryProps> = (props) => {
   const re = /issue-v\/([0-9]*)/i;
 
   props.statements.forEach((statement) => {
-    numStatements++;
-    if (statement.issues != null) {
-      statement.issues.forEach((issue) => {
-        switch (issue.level) {
-          case "info":
-            numInfo++;
-            break;
-          default:
-            numDanger++;
-
-          switch (issue.type) {
-            case "unimplemented":
-              const match = issue.text.match(re);
-              if (match != null) {
-                const issue = match[1];
-                const curr = unimplementedIssueCount.get(issue);
-                unimplementedIssueCount.set(issue, curr != null ? curr + 1: 1);
-              } else {
-                numNoIssueUnimplemented++;
-              }
-              break;
-            case "missing_user":
-              numMissingUser++;
-              break;
-          }
-        }
-      })
+    if (statement.deleted && statement.issues == null) {
+      return;
     }
-  })
+
+    statement.issues.forEach((issue) => {
+      if (issue.level === "info") {
+        numInfo++;
+      } else {
+        numDanger++;
+        if (issue.type === "unimplemented") {
+            const match = issue.text.match(re);
+            if (match != null) {
+              const issue = match[1];
+              const curr = unimplementedIssueCount.get(issue);
+              unimplementedIssueCount.set(issue, curr != null ? curr + 1: 1);
+            } else {
+              numNoIssueUnimplemented++;
+            }
+        } else if (issue.type === "missing_user") {
+            numMissingUser++;
+        }
+      }
+    });
+  });
 
   const unimplementedIssueCountArr = Array.from(unimplementedIssueCount);
   unimplementedIssueCountArr.sort();
@@ -96,7 +90,7 @@ export const StatementsSummary: React.FC<StatementsSummaryProps> = (props) => {
 
   return (
     <ul>
-      <li>{numStatements} statements found.</li>
+      <li>{props.statements.length} statements found.</li>
       <li style={numDanger > 0 ? {color: 'red'}: {}}>{numDanger} fixes required.
         {totalTime > 0 ? <>
           &nbsp;Estimated fix time: <Moment date={new Date(Date.now() - totalTime)} fromNow ago/>.

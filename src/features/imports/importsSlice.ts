@@ -2,7 +2,7 @@ import { createSlice, createEntityAdapter, PayloadAction, EntityState, nanoid } 
 import type { RootState } from "../../app/store";
 import type { Import, ImportMetadata, ImportStatement } from "../../common/import";
 
-type Statement = ImportStatement & { id: string, importId: string };
+export type Statement = ImportStatement & { id: string, importId: string, deleted: boolean };
 
 type ImportEntry = 
   Pick<Import, "id" | "unix_nano"> &
@@ -33,6 +33,7 @@ export const importsSlice = createSlice({
       const statementsWithIds: Statement[] = payload.import_metadata.statements.map(stmt => ({
         id: nanoid(),
         importId: importId,
+        deleted: false,
         ...stmt,
       }));
       const initialStatements = statementsAdapter.getInitialState();
@@ -47,6 +48,24 @@ export const importsSlice = createSlice({
         statements: statementsContainer,
       };
       importsAdapter.addOne(state, theImport);
+    },
+    softDeleteStatements(state, action: PayloadAction<Statement[]>) {
+      const payload = action.payload;
+      if (payload.length === 0) {
+        console.warn("Attempted to mark 0 statements as deleted.");
+        return;
+      }
+      const theImport = state.entities[payload[0].importId];
+      if (!theImport) {
+        return;
+      }
+
+      const modifiedStatements = payload.map(stmt => ({
+        ...stmt,
+        deleted: true
+      }));
+
+      statementsAdapter.setMany(theImport.statements, modifiedStatements);
     },
   },
 });
