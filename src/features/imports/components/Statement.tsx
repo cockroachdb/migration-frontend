@@ -1,10 +1,10 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Row, Col, Button, ButtonGroup } from 'react-bootstrap';
 
 import type { ImportIssue } from "../../../common/import";
-import { importsSlice, Statement as StatementType } from "../importsSlice";
+import { getSelectorsForImportId, importsSlice, Statement as StatementType } from "../importsSlice";
 import { modalSlice } from "../../modals/modalSlice";
-import { useAppDispatch } from "../../../app/hooks";
+import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { useAddUser } from "../hooks";
 
 interface StatementProps {
@@ -13,13 +13,17 @@ interface StatementProps {
   database: string;
   callbacks: {
     handleFixSequence: (statementIdx: number, issueIdentifier: string) => void;
-    handleTextAreaChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
     setActiveStatement: () => void;
   }
 }
 
 export const Statement = React.forwardRef<HTMLTextAreaElement, StatementProps>((props, ref) => {
-  const statement = props.statement;
+  const importId = props.statement.importId;
+  const statementId = props.statement.id;
+  const statementSelectors = useAppSelector((state) => getSelectorsForImportId(state, importId));
+  const statement = useAppSelector((state) => statementSelectors!.selectById(state, statementId))!;
+
+  const [ crdbStmt, setCrdbStmt ] = useState(statement?.cockroach || "");
 
   const colorForIssue = (issues: ImportIssue[]) => {
     if (issues == null || issues.length === 0) {
@@ -63,6 +67,28 @@ export const Statement = React.forwardRef<HTMLTextAreaElement, StatementProps>((
 
   const onAddUser = useAddUser();
 
+  // Publish statement changes when focus leaves the <textarea>
+  const onBlur = useCallback(
+    () => dispatch(
+      importsSlice.actions.setStatementText({
+        statement: statement,
+        cockroach: crdbStmt,
+      })
+    ),
+    [ dispatch, crdbStmt ]
+  );
+
+  // Overwrite the local statement whenever the <textarea> changes
+  const onChange = useCallback((event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setCrdbStmt(event.target.value);
+  }, [setCrdbStmt]);
+
+  // Overwrite the local statement if the representation in the store changes
+  useEffect(
+    () => setCrdbStmt(statement.cockroach),
+    [ statement.cockroach, setCrdbStmt ]
+  );
+
   const onFixSequence = (statementIdx: number, issueIdentifier: string) =>
     () => props.callbacks.handleFixSequence(statementIdx, issueIdentifier)
 
@@ -104,10 +130,11 @@ export const Statement = React.forwardRef<HTMLTextAreaElement, StatementProps>((
         <textarea
           className="form-control"
           id={'ta' + props.idx}
-          value={statement.deleted ? '' : statement.cockroach}
+          value={statement.deleted ? '' : crdbStmt}
           ref={ref}
           placeholder={statement.deleted ? '-- statement ignored' : statement.cockroach}
-          onChange={props.callbacks.handleTextAreaChange}
+          onBlur={onBlur}
+          onChange={onChange}
           onFocus={() => props.callbacks.setActiveStatement()}
           rows={statement.cockroach.split('\n').length + 1}
         />

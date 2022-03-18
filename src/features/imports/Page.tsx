@@ -101,14 +101,6 @@ export const ImportPage = (props: ImportPageProps) => {
     )
   };
 
-  const handleTextAreaChangeForIdx = (idx: number, event: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newState = state.data;
-    newState.import_metadata.statements[idx].cockroach = event.target.value;
-    setState({...state, data: newState});
-  }
-
-  const handleTextAreaChange = (idx: number) => (event: React.ChangeEvent<HTMLTextAreaElement>) => handleTextAreaChangeForIdx(idx, event);
-
   const handleFixSequence = (statementIdx: number, issueIdentifier: string) => {
     axios.post<ImportStatement>(
       "http://" + window.location.hostname + ":5050/fix_sequence",
@@ -385,7 +377,6 @@ export const ImportPage = (props: ImportPageProps) => {
                 idx={idx}
                 ref={state.statementRefs[idx]}
                 callbacks={{
-                  handleTextAreaChange: handleTextAreaChange(idx),
                   handleFixSequence: handleFixSequence,
                   setActiveStatement: () => setActiveStatement(idx),
                 }}
