@@ -379,7 +379,6 @@ export const ImportPage = (props: ImportPageProps) => {
                 callbacks={{
                   handleTextAreaChange: handleTextAreaChange(idx),
                   handleFixSequence: handleFixSequence,
-                  setShowSQLExec: setShowSQLExec,
                   setActiveStatement: () => setActiveStatement(idx),
                   handleAddUser: handleAddUser,
                 }}
