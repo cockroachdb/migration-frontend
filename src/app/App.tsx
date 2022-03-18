@@ -5,7 +5,7 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import './App.scss';
 import store from "./store";
 import { Home } from "./pages/Home";
-import { ImportPage } from "./pages/Import";
+import { ImportPage } from "../features/imports/Page";
 
 function App() {
   const [id, setStateID] = useState<string>('');
