@@ -3,6 +3,7 @@ import { Row, Col, Button, ButtonGroup } from 'react-bootstrap';
 
 import type { ImportIssue } from "../../common/import";
 import { importsSlice, Statement as StatementType } from "../../features/imports/importsSlice";
+import { modalSlice } from "../../features/modals/modalSlice";
 import { useAppDispatch } from "../hooks";
 
 interface StatementProps {
@@ -12,7 +13,6 @@ interface StatementProps {
   callbacks: {
     handleFixSequence: (statementIdx: number, issueIdentifier: string) => void;
     handleTextAreaChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
-    setShowSQLExec: (showSQLExec: boolean, text?: string) => void;
     setActiveStatement: () => void;
     handleAddUser: (user: string) => void;
   }
@@ -57,6 +57,9 @@ export const Statement = React.forwardRef<HTMLTextAreaElement, StatementProps>((
       })
     );
   }, [ dispatch, props.idx, statement.importId ]);
+  const showExecuteModal = useCallback(() => {
+    dispatch(modalSlice.actions.showRawSql(statement.cockroach));
+  }, [ dispatch, statement.cockroach ]);
 
   const onFixSequence = (statementIdx: number, issueIdentifier: string) =>
     () => props.callbacks.handleFixSequence(statementIdx, issueIdentifier)
@@ -112,7 +115,7 @@ export const Statement = React.forwardRef<HTMLTextAreaElement, StatementProps>((
             <Button variant="outline-primary" onClick={onInsertAbove}>Insert Before</Button>
             <Button variant="outline-primary" onClick={onInsertBelow}>Insert After</Button>
             <Button variant="outline-secondary" onClick={toggleDelete}>{statement.deleted ? "Restore" : "Delete"}</Button>
-            <Button variant="outline-primary" onClick={() => props.callbacks.setShowSQLExec(true, statement.cockroach)} disabled={props.database === ""}>Execute</Button>
+            <Button variant="outline-primary" onClick={showExecuteModal} disabled={props.database === ""}>Execute</Button>
           </ButtonGroup>
         </p>
       </Col>
