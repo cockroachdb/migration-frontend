@@ -201,7 +201,7 @@ export const ImportPage = (props: ImportPageProps) => {
 
   const setShowExport = (showExport: boolean) => {
     if (showExport) {
-      dispatch(modalSlice.actions.showExport());
+      dispatch(modalSlice.actions.showExport(statements.map(stmt => stmt.cockroach).join("\n")));
     } else {
       dispatch(modalSlice.actions.hideAll());
     }
@@ -243,15 +243,23 @@ export const ImportPage = (props: ImportPageProps) => {
     alert('no issues found!');
   }
 
-  const exportText = state.data.import_metadata.statements != null ? state.data.import_metadata.statements.map((statement) => {
-    const pg = statement.original.split("\n").map(x => `-- ${x}`).join("\n")
-    var crdb = statement.cockroach;
-    crdb.trim();
-    if (crdb.length > 0 && crdb.charAt(crdb.length - 1) !== ';') {
-      crdb += ";";
-    }
-    return '-- postgres:\n' + pg + '\n' + crdb + '\n';
-  }).join('\n') : '';
+  const getExportText = useCallback(() =>
+    statements
+      .filter((statement) => !statement.deleted)
+      .map((statement) => {
+        // comment-out each line if it isn't already commented
+        const pg = statement.original
+          .split("\n")
+          .map(x => x.startsWith("--") ? x : `-- ${x}`)
+          .join("\n");
+        let crdb = statement.cockroach.trim();
+        if (crdb && !crdb.endsWith(";")) {
+          crdb += ";";
+        }
+        return [ "-- postgres", pg, crdb ].join("\n");
+      }).join("\n\n"),
+    [ statements ]
+  );
 
   const setFindAndReplace = (visible: boolean) => {
     if (visible) {
@@ -351,8 +359,8 @@ export const ImportPage = (props: ImportPageProps) => {
           <>
             <ExportDialog
               show={isExportModal(visibleModal)}
-              exportText={exportText}
-              handleSave={handleSave(exportText, state.data.id + '_export.sql')}/>
+              exportText={getExportText()}
+              handleSave={handleSave(getExportText(), state.data.id + '_export.sql')}/>
             <FindAndReplaceDialog
               show={isFindReplaceModal(visibleModal)}
               findAndReplace={findAndReplace}/>
@@ -420,7 +428,7 @@ export const ImportPage = (props: ImportPageProps) => {
                   <Dropdown.Item eventKey="deleteAllUnimplemented">Delete unimplemented statements</Dropdown.Item>
                   <Dropdown.Item eventKey="fixAllSequences">Fix all sequences</Dropdown.Item>
                 </DropdownButton>
-                <Button variant="secondary" onClick={handleSave(exportText, state.data.id + '_export.sql')}>Export SQL File</Button>
+                <Button variant="secondary" onClick={handleSave(getExportText(), state.data.id + '_export.sql')}>Export SQL File</Button>
                 <Button variant="outline-secondary" onClick={() => setShowSQLExec(true)} disabled={state.data.import_metadata.database === ''}>Query Current State</Button>
                 <Button variant="danger" onClick={handleNextStatementWithIssue}>Scroll to Next Issue</Button>
               </ButtonGroup>

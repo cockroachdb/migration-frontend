@@ -10,6 +10,7 @@ type SqlModal = {
 };
 type ExportModal = {
   kind: "EXPORT",
+  exportText: string,
 };
 type FindReplaceModal = {
   kind: "FIND_REPLACE",
@@ -38,7 +39,7 @@ export const modalSlice = createSlice({
         };
       }
     },
-    showExport: (state) => { state.visibleModal = { kind: "EXPORT" }; },
+    showExport: (state, action: PayloadAction<string>) => { state.visibleModal = { kind: "EXPORT", exportText: action.payload }; },
     showFindReplace: (state) => { state.visibleModal = { kind: "FIND_REPLACE" }; },
     hideAll: (state) => { state.visibleModal = { kind: "NONE" }; }
   },
