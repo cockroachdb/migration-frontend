@@ -2,15 +2,15 @@ import React, { useCallback, useEffect, useState } from "react";
 import { Row, Col, Button, ButtonGroup } from 'react-bootstrap';
 
 import type { ImportIssue } from "../../../common/import";
-import { getSelectorsForImportId, importsSlice, Statement as StatementType } from "../importsSlice";
+import { getSelectorsForImportId, importsSelectors, importsSlice, Statement as StatementType } from "../importsSlice";
 import { modalSlice } from "../../modals/modalSlice";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { useAddUser } from "../hooks";
 
 interface StatementProps {
-  statement: StatementType;
   idx: number;
-  database: string;
+  statementId: string;
+  importId: string;
   callbacks: {
     handleFixSequence: (statementIdx: number, issueIdentifier: string) => void;
     setActiveStatement: () => void;
@@ -18,8 +18,8 @@ interface StatementProps {
 }
 
 export const Statement = React.forwardRef<HTMLTextAreaElement, StatementProps>((props, ref) => {
-  const importId = props.statement.importId;
-  const statementId = props.statement.id;
+  const { importId, statementId } = props;
+  const thisImport = useAppSelector((state) => importsSelectors.selectById(state, importId));
   const statementSelectors = useAppSelector((state) => getSelectorsForImportId(state, importId));
   const statement = useAppSelector((state) => statementSelectors!.selectById(state, statementId))!;
 
@@ -144,7 +144,7 @@ export const Statement = React.forwardRef<HTMLTextAreaElement, StatementProps>((
             <Button variant="outline-primary" onClick={onInsertAbove}>Insert Before</Button>
             <Button variant="outline-primary" onClick={onInsertBelow}>Insert After</Button>
             <Button variant="outline-secondary" onClick={toggleDelete}>{statement.deleted ? "Restore" : "Delete"}</Button>
-            <Button variant="outline-primary" onClick={showExecuteModal} disabled={props.database === ""}>Execute</Button>
+            <Button variant="outline-primary" onClick={showExecuteModal} disabled={!thisImport || thisImport.database === ""}>Execute</Button>
           </ButtonGroup>
         </p>
       </Col>

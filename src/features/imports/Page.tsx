@@ -1,4 +1,4 @@
-import { useEffect, useState, createRef } from "react";
+import { useEffect, useState, createRef, useCallback } from "react";
 import classnames from "classnames/bind";
 import axios from "axios";
 import { saveAs } from 'file-saver';
@@ -370,11 +370,11 @@ export const ImportPage = (props: ImportPageProps) => {
           </Row>
           {state.loaded && currentImport ?
             statements.map((statement, idx) => (
-              <Statement
-                key={statement.id}
-                statement={statement}
-                database={currentImport.database}
-                idx={idx}
+              <Statement 
+                key={statement.id} 
+                idx={idx} 
+                importId={importId}
+                statementId={statement.id}
                 ref={state.statementRefs[idx]}
                 callbacks={{
                   handleFixSequence: handleFixSequence,
