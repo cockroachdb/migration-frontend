@@ -1,6 +1,6 @@
 import Moment from "react-moment";
 
-import type { Statement } from "../../features/imports/importsSlice";
+import type { Statement } from "../importsSlice";
 
 interface StatementsSummaryProps {
   statements: Statement[];

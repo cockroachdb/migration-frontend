@@ -4,18 +4,18 @@ import { saveAs } from 'file-saver';
 import { Container, Alert, Col, Row, Dropdown, ButtonGroup, DropdownButton, Button, Spinner } from "react-bootstrap";
 import Moment from "react-moment";
 
-import { Statement } from "../components/Statement";
-import { StatementsSummary } from "../components/StatementsSummary";
-import { FindAndReplaceDialog } from "../../features/modals/FindAndReplaceDialog";
-import { SQLExecDialog } from "../../features/modals/SQLExecDialog";
-import { ExportDialog } from "../../features/modals/ExportDialog";
+import { Statement } from "./components/Statement";
+import { StatementsSummary } from "./components/StatementsSummary";
+import { FindAndReplaceDialog } from "../modals/FindAndReplaceDialog";
+import { SQLExecDialog } from "../modals/SQLExecDialog";
+import { ExportDialog } from "../modals/ExportDialog";
 
 import type { Import, ImportStatement } from "../../common/import";
-import type { FindAndReplaceArgs } from "../../features/modals/FindAndReplaceDialog";
-import { modalSlice, getVisibleModal, isFindReplaceModal, isExportModal, isSqlModal, getRawSqlTextToExecute} from "../../features/modals/modalSlice";
-import { useAppDispatch, useAppSelector } from "../hooks";
+import type { FindAndReplaceArgs } from "../modals/FindAndReplaceDialog";
+import { modalSlice, getVisibleModal, isFindReplaceModal, isExportModal, isSqlModal, getRawSqlTextToExecute} from "../modals/modalSlice";
+import { useAppDispatch, useAppSelector } from "../../app/hooks";
 
-import { importsSlice, getSelectorsForImportId, importsSelectors } from "../../features/imports/importsSlice";
+import { importsSlice, getSelectorsForImportId, importsSelectors } from "./importsSlice";
 
 interface ImportPageState {
   data: Import;

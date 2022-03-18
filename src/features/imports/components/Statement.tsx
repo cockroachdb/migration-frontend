@@ -1,10 +1,10 @@
 import React, { useCallback } from "react";
 import { Row, Col, Button, ButtonGroup } from 'react-bootstrap';
 
-import type { ImportIssue } from "../../common/import";
-import { importsSlice, Statement as StatementType } from "../../features/imports/importsSlice";
-import { modalSlice } from "../../features/modals/modalSlice";
-import { useAppDispatch } from "../hooks";
+import type { ImportIssue } from "../../../common/import";
+import { importsSlice, Statement as StatementType } from "../importsSlice";
+import { modalSlice } from "../../modals/modalSlice";
+import { useAppDispatch } from "../../../app/hooks";
 
 interface StatementProps {
   statement: StatementType;
