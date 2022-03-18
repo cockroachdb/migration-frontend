@@ -269,7 +269,7 @@ export const ImportPage = (props: ImportPageProps) => {
     }
   }
 
-  const findAndReplace = (args: FindAndReplaceArgs) => {
+  const findAndReplace = useCallback((args: FindAndReplaceArgs) => {
     if (args.find !== '') {
       var re : (RegExp | null) = null;
       try {
@@ -277,24 +277,25 @@ export const ImportPage = (props: ImportPageProps) => {
       } catch {
         return;
       }
-      const newState = state.data;
-      state.data.import_metadata.statements.forEach((statement, idx) => {
-        if (args.isRegex) {
-          if (re == null) {
-            alert("invalid regexp");
-            return;
-          }
-          state.data.import_metadata.statements[idx].cockroach =
-            state.data.import_metadata.statements[idx].cockroach.replace(re, args.replace);
-        } else {
-          state.data.import_metadata.statements[idx].cockroach =
-            state.data.import_metadata.statements[idx].cockroach.replace(args.find, args.replace);
-        }
+      if (args.isRegex && re == null) {
+        alert("invalid regexp");
+        return;
+      }
+
+      statements.forEach((statement) => {
+        let replaced = args.isRegex
+          ? statement.cockroach.replace(re!, args.replace)
+          : statement.cockroach.replace(args.find, args.replace);
+        dispatch(
+          importsSlice.actions.setStatementText({
+            statement,
+            cockroach: replaced,
+          }),
+        );
       });
-      setState({...supplyRefs({...state, data: newState}), activeStatement: state.activeStatement});
     }
     setFindAndReplace(false);
-  };
+  }, [dispatch, statements]);
 
   const handleSelectAction = (key: string | null) => {
     if (key == null) {

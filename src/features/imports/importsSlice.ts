@@ -91,6 +91,21 @@ export const importsSlice = createSlice({
         ...nextState.ids.slice(index, nextState.ids.length - 1),
       ];
     },
+    setStatementText(state, action: PayloadAction<{ statement: Statement, original?: string, cockroach?: string }>) {
+      const { statement, original, cockroach } = action.payload;
+      const theImport = state.entities[statement.importId];
+      if (!theImport) {
+        return;
+      }
+
+      const modifiedStatement: Statement = {
+        ...statement,
+        original: original || statement.original,
+        cockroach: cockroach || statement.cockroach,
+      }
+
+      statementsAdapter.setOne(theImport.statements, modifiedStatement);
+    },
     clearStatementIssuesByType(state, action: PayloadAction<{ statement: Statement, issueType: string }>) {
       const { statement, issueType } = action.payload;
       const theImport = state.entities[statement.importId];
