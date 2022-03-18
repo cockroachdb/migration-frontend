@@ -12,12 +12,13 @@ import { FindAndReplaceDialog } from "../modals/FindAndReplaceDialog";
 import { SQLExecDialog } from "../modals/SQLExecDialog";
 import { ExportDialog } from "../modals/ExportDialog";
 
-import type { Import, ImportStatement } from "../../common/import";
+import type { Import, ImportIssue, ImportStatement } from "../../common/import";
 import type { FindAndReplaceArgs } from "../modals/FindAndReplaceDialog";
 import { modalSlice, getVisibleModal, isFindReplaceModal, isExportModal, isSqlModal, getRawSqlTextToExecute} from "../modals/modalSlice";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
+import { useAddUser } from "./hooks";
 
-import { importsSlice, getSelectorsForImportId, importsSelectors } from "./importsSlice";
+import { importsSlice, getSelectorsForImportId, importsSelectors, Statement as StatementType } from "./importsSlice";
 
 import styles from "./Page.module.scss";
 
@@ -55,6 +56,12 @@ export const ImportPage = (props: ImportPageProps) => {
   const dispatch = useAppDispatch();
   const visibleModal = useAppSelector(getVisibleModal);
   const rawSqlCommand = useAppSelector(getRawSqlTextToExecute);
+  const addUser = useAddUser();
+
+  const importId = state.data.id;
+  const currentImport = useAppSelector((state) => importsSelectors.selectById(state, importId));
+  const selectors = useAppSelector((state) => getSelectorsForImportId(state, importId));
+  const statements = useAppSelector((state) => selectors?.selectAll(state)) || [];
 
   const supplyRefs = (data: ImportPageState) => {
     const refs: React.RefObject<HTMLTextAreaElement>[] = [];
@@ -155,48 +162,34 @@ export const ImportPage = (props: ImportPageProps) => {
     return elems.length;
   }
 
+  const handleAddAllUsers = () => {
+    const addedUsers = handleAddAllUsersInternal();
+    alert(`${addedUsers} ${addedUsers === 1 ? "user" : "users"} added (see top of statements list)`);
+  };
 
+  const handleAddAllUsersInternal = useCallback(() => {
+    type StatementIssuePair = { stmt: StatementType, issue: ImportIssue };
+    const statementsWithMissingUsers = statements
+      .map((stmt) => ({ stmt, issue: stmt.issues?.find(issue => issue.type === "missing_user")}) )
+      .filter(({ issue }) => !!issue) as StatementIssuePair[];
 
-  const handleAddUser = (user: string) => {
-    const newState = state.data;
-    newState.import_metadata.statements.splice(0, 0, {
-      original: '-- newly added statement',
-      cockroach: `CREATE USER IF NOT EXISTS "${user}"`,
-      issues: [],
-    }, {
-      original: '-- newly added statement',
-      cockroach: `GRANT admin TO "${user}"`,
-      issues: [],
-    })
-    newState.import_metadata.statements.forEach((statement, statementIdx) => {
-      if (statement.issues != null) {
-        statement.issues.forEach((issue, issueIdx) => {
-          if (issue.type === 'missing_user') {
-            // concurrent array deletion bug?
-            statement.issues.splice(issueIdx, 1);
-          }
-        });
-      }
-    })
-    setState({...supplyRefs({...state, data: newState}), activeStatement: state.activeStatement});
-  }
+    // get unique set of users to add
+    let usernamesToAdd = new Set(statementsWithMissingUsers.map(({ issue }) => issue.id));
 
-  const handleAddAllUsers = () => alert(`${handleAddAllUsersInternal()} users added`);
+    // push them onto the array of statements, reversing them first so they appear in the correct order
+    Array.from(usernamesToAdd).reverse().forEach((username) => addUser(username, 0 /* index */, importId));
 
-  const handleAddAllUsersInternal = (): number =>  {
-    const users = new Set<string>();
-    state.data.import_metadata.statements.forEach((statement) => {
-      if (statement.issues != null) {
-        statement.issues.forEach((issue) => {
-          if (issue.type === 'missing_user') {
-            users.add(issue.id);
-          }
-        });
-      }
-    });
-    users.forEach(user => handleAddUser(user));
-    return users.size
-  }
+    // now clean the statements with missing users, since there's a potentially 1:many relationship between missing
+    // users and statements
+    statementsWithMissingUsers.forEach(({ stmt }) => dispatch(
+      importsSlice.actions.clearStatementIssuesByType({
+        statement: stmt,
+        issueType: "missing_user",
+      })
+    ));
+
+    return usernamesToAdd.size;
+  }, [ addUser, statements, importId ]);
 
   const fixAll = () => {
     var text = '';
@@ -326,11 +319,6 @@ export const ImportPage = (props: ImportPageProps) => {
     }
   }
 
-  const importId = state.data.id;
-  const currentImport = useAppSelector((state) => importsSelectors.selectById(state, importId));
-  const selectors = useAppSelector((state) => getSelectorsForImportId(state, importId));
-  const statements = useAppSelector((state) => selectors?.selectAll(state)) || [];
-
   return (
     <>
       <TitleBar />
@@ -391,7 +379,6 @@ export const ImportPage = (props: ImportPageProps) => {
                   handleTextAreaChange: handleTextAreaChange(idx),
                   handleFixSequence: handleFixSequence,
                   setActiveStatement: () => setActiveStatement(idx),
-                  handleAddUser: handleAddUser,
                 }}
               />
             )) : (

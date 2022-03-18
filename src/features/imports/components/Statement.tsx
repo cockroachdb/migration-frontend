@@ -5,6 +5,7 @@ import type { ImportIssue } from "../../../common/import";
 import { importsSlice, Statement as StatementType } from "../importsSlice";
 import { modalSlice } from "../../modals/modalSlice";
 import { useAppDispatch } from "../../../app/hooks";
+import { useAddUser } from "../hooks";
 
 interface StatementProps {
   statement: StatementType;
@@ -14,7 +15,6 @@ interface StatementProps {
     handleFixSequence: (statementIdx: number, issueIdentifier: string) => void;
     handleTextAreaChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
     setActiveStatement: () => void;
-    handleAddUser: (user: string) => void;
   }
 }
 
@@ -61,6 +61,8 @@ export const Statement = React.forwardRef<HTMLTextAreaElement, StatementProps>((
     dispatch(modalSlice.actions.showRawSql(statement.cockroach));
   }, [ dispatch, statement.cockroach ]);
 
+  const onAddUser = useAddUser();
+
   const onFixSequence = (statementIdx: number, issueIdentifier: string) =>
     () => props.callbacks.handleFixSequence(statementIdx, issueIdentifier)
 
@@ -94,7 +96,7 @@ export const Statement = React.forwardRef<HTMLTextAreaElement, StatementProps>((
                 <Button variant="outline-info" onClick={onFixSequence(props.idx, issue.id)}>Make UUID</Button>
               ) : ''}
               {issue.type === "missing_user" ? (
-                <Button variant="outline-info" onClick={() => props.callbacks.handleAddUser(issue.id)}>Add user "{issue.id}"</Button>
+                <Button variant="outline-info" onClick={() => onAddUser(issue.id, props.idx, statement.importId, statement)}>Add user "{issue.id}"</Button>
               ) : ''}
             </li>
           )) : ''}
