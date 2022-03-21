@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { Form, Modal, Button } from 'react-bootstrap';
 import { useAppDispatch } from "../../app/hooks";
 import { modalSlice } from "./modalSlice";
@@ -22,7 +22,7 @@ export const FindAndReplaceDialog: React.FC<FindAndReplaceDialogProps> = (props)
   });
 
   const dispatch = useAppDispatch();
-  const hideModal = useCallback(() => dispatch(modalSlice.actions.hideAll()), [dispatch]);
+  const hideModal = () => dispatch(modalSlice.actions.hideAll());
 
   const setFindText = (event: React.ChangeEvent<HTMLInputElement>) =>
     setState({ ...state, find: event.target.value });
