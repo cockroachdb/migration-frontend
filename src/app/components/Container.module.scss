@@ -1,0 +1,33 @@
+@import "~@cockroachlabs/design-tokens/dist/web/tokens";
+
+.container {
+  background-color: $color-base-white;
+  border-radius: 5px;
+  padding: 2.5rem;
+  margin: 2rem auto;
+  max-width: 80rem;
+}
+
+.depth-0 {
+  box-shadow: 0px 0px 1px rgba($color-core-neutral-4, 0.415);
+}
+.depth-1 {
+  box-shadow:
+    0px 1px 4px rgba($color-core-neutral-4, 0.15),
+    0px 0px 1px rgba($color-core-neutral-4, 0.415);
+}
+.depth-2 {
+  box-shadow:
+    0px 1px 4px rgba($color-core-neutral-4, 0.23),
+    0px 0px 1px rgba($color-core-neutral-4, 0.47);
+}
+.depth-3 {
+  box-shadow:
+    0px 1px 4px rgba($color-core-neutral-4, 0.3),
+    0px 0px 1px rgba($color-core-neutral-4, 0.47);
+}
+.depth-4 {
+  box-shadow:
+    0px 1px 4px rgba($color-core-neutral-4, 0.54),
+    0px 0px 1px rgba($color-core-neutral-4, 0.47);
+}
