@@ -10,6 +10,7 @@ import TitleBar from "../components/TitleBar";
 import Container from "../components/Container";
 
 import styles from  "./Home.module.scss";
+
 export interface HomeProps {
   setID: (s: string) => void;
 }
@@ -79,7 +80,7 @@ export const Home: React.FC<HomeProps> = (props: HomeProps) => {
           SQL Importer
         </Heading>
 
-        <form onSubmit={handleSubmit} className={cx("upload-form")}>
+        <form onSubmit={handleSubmit}>
           <p>
             <Text type="body">
               Upload your file for import.

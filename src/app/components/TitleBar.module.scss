@@ -14,3 +14,10 @@
   margin: 0 1em;
   width: 1px;
 }
+
+// overriding base styles from boostrap
+// remove these when we drop bootstrap
+
+h3.bootstrap-override {
+  margin-bottom: 0;
+}

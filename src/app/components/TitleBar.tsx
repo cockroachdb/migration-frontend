@@ -10,7 +10,7 @@ const TitleBar = () => (
   <header className={cx("title-bar")}>
     <Logo brand="cockroachdb" size="small" />
     <div className={cx("spacer")} />
-    <Heading type="h3">SQL Migration Tool</Heading>
+    <Heading type="h3" className={cx("bootstrap-override")}>SQL Migration Tool</Heading>
   </header>
 );
 
