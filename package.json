@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "@cockroachlabs/design-tokens": "^0.4.5",
+    "@cockroachlabs/ui-components": "^0.3.2",
     "@reduxjs/toolkit": "^1.8.0",
     "axios": "^0.24.0",
     "bootstrap": "^5.1.3",
