@@ -39,7 +39,7 @@ export const StatementsSummary: React.FC<StatementsSummaryProps> = (props) => {
   const re = /issue-v\/([0-9]*)/i;
 
   props.statements.forEach((statement) => {
-    if (statement.deleted && statement.issues == null) {
+    if (statement.deleted || statement.issues == null) {
       return;
     }
 
