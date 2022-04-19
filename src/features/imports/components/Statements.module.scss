@@ -1,0 +1,21 @@
+@import "~@cockroachlabs/design-tokens/dist/web/tokens";
+
+.statements-heading {
+  line-height: 36px;
+  margin-bottom: 0;
+}
+
+.fixes-required {
+  color: $color-intent-danger-4;
+}
+
+.statements-stats {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.statement-stat:nth-child(n+2) {
+  border-left: 1px solid $color-core-neutral-4;
+  margin: 0 1rem;
+  padding: 0 1.5rem;
+}

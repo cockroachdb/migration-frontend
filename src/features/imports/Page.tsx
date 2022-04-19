@@ -1,9 +1,11 @@
 import { useEffect, useState, createRef } from "react";
+import classnames from "classnames/bind";
 import axios from "axios";
 import { saveAs } from 'file-saver';
-import { Container, Alert, Col, Row, Dropdown, ButtonGroup, DropdownButton, Button, Spinner } from "react-bootstrap";
-import Moment from "react-moment";
+import { Col, Row, Dropdown, ButtonGroup, DropdownButton, Button, Spinner } from "react-bootstrap";
+import { Heading, Text, FuzzyTime } from "@cockroachlabs/ui-components";
 
+import { TitleBar, Container, Hr } from "../../app/components";
 import { Statement } from "./components/Statement";
 import { StatementsSummary } from "./components/StatementsSummary";
 import { FindAndReplaceDialog } from "../modals/FindAndReplaceDialog";
@@ -17,6 +19,8 @@ import { useAppDispatch, useAppSelector } from "../../app/hooks";
 
 import { importsSlice, getSelectorsForImportId, importsSelectors } from "./importsSlice";
 
+import styles from "./Page.module.scss";
+
 interface ImportPageState {
   data: Import;
   loaded: boolean;
@@ -26,8 +30,10 @@ interface ImportPageState {
 }
 
 interface ImportPageProps {
-  id: string;  
+  id: string;
 }
+
+const cx = classnames.bind(styles);
 
 export const ImportPage = (props: ImportPageProps) => {
   const [state, setState] = useState<ImportPageState>({
@@ -67,9 +73,7 @@ export const ImportPage = (props: ImportPageProps) => {
         dispatch(importsSlice.actions.importAdded(response.data));
         setState(supplyRefs({...state, loaded: true, data: response.data}));
       }
-    ).catch(
-      error => alert(`Error: ${error}`)
-    );
+    )
   }
 
   useEffect(() => {
@@ -87,10 +91,8 @@ export const ImportPage = (props: ImportPageProps) => {
       response => {
         setState(supplyRefs({...state, loaded: true, data: response.data}));
       }
-    ).catch(
-      error => alert(`Error: ${error}`)
-    );
-  }
+    )
+  };
 
   const handleTextAreaChangeForIdx = (idx: number, event: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newState = state.data;
@@ -118,7 +120,7 @@ export const ImportPage = (props: ImportPageProps) => {
     );
   }
 
-  const deleteAllUnimplemented = () => {  
+  const deleteAllUnimplemented = () => {
     alert(`${deleteAllUnimplementedInternal()} statements deleted!`);
   }
 
@@ -268,9 +270,9 @@ export const ImportPage = (props: ImportPageProps) => {
 
   const findAndReplace = (args: FindAndReplaceArgs) => {
     if (args.find !== '') {
-      var re : (RegExp | null) = null; 
+      var re : (RegExp | null) = null;
       try {
-        re = new RegExp(args.find); 
+        re = new RegExp(args.find);
       } catch {
         return;
       }
@@ -331,24 +333,33 @@ export const ImportPage = (props: ImportPageProps) => {
 
   return (
     <>
-      <Container className="bg-light p-5">
-        <h1 className="display-4 fw-bold">
-          {!state.loaded ? 'Loading database migration....' : state.data.id}
-        </h1>
-        {state.loaded ? 
+      <TitleBar />
+      <Container>
+        <section className={cx("import-header")}>
+          <Heading type="h3">
+            {!state.loaded ? 'Loading database migration....' : `Results for ${state.data.id}`}
+          </Heading>
+
+        {state.loaded ?
+          (<Text type="body">
+            Last imported <FuzzyTime className={cx("import-fuzzy-time")} timestamp={new Date(state.data.unix_nano / 1000000)} />
+          </Text>)
+           : null
+        }
+        </section>
+
+        <Hr />
+
+        {state.loaded ?
           <>
-            <Alert variant={state.data.import_metadata.status}>{state.data.import_metadata.message}</Alert>
-            <hr/>
             <StatementsSummary statements={statements} />
           </>
           : ''
-        }          
-        <hr/>
-        {state.loaded ? <div>Last imported&nbsp;<Moment date={new Date(state.data.unix_nano / 1000000).toISOString()} fromNow /></div>: ''}
+        }
       </Container>
 
-      <Container className="p-4 m-2" fluid>
-        {state.loaded ? 
+      <Container>
+        {state.loaded ?
           <>
             <ExportDialog
               show={isExportModal(visibleModal)}
@@ -370,11 +381,11 @@ export const ImportPage = (props: ImportPageProps) => {
           </Row>
           {state.loaded && currentImport ?
             statements.map((statement, idx) => (
-              <Statement 
-                key={statement.id} 
-                statement={statement} 
+              <Statement
+                key={statement.id}
+                statement={statement}
                 database={currentImport.database}
-                idx={idx} 
+                idx={idx}
                 ref={state.statementRefs[idx]}
                 callbacks={{
                   handleTextAreaChange: handleTextAreaChange(idx),
@@ -395,7 +406,7 @@ export const ImportPage = (props: ImportPageProps) => {
       </Container>
 
       <footer className="fixed-bottom sticky-footer">
-        <Container className="m-2" fluid style={{textAlign: 'center'}}>
+        <section className="m-2" style={{textAlign: 'center'}}>
             {state.loaded ?
               <ButtonGroup>
                 <Button variant="primary" onClick={handleSubmit}>Save and Reimport</Button>
@@ -413,7 +424,7 @@ export const ImportPage = (props: ImportPageProps) => {
 
                   <Dropdown.Header>Editors</Dropdown.Header>
                   <Dropdown.Item eventKey="findAndReplace">Find and Replace</Dropdown.Item>
-                  
+
                   <Dropdown.Divider />
 
                   <Dropdown.Header>Automagic fixers</Dropdown.Header>
@@ -427,7 +438,7 @@ export const ImportPage = (props: ImportPageProps) => {
                 <Button variant="danger" onClick={handleNextStatementWithIssue}>Scroll to Next Issue</Button>
               </ButtonGroup>
             : <span className="visually-hidden">Loading...</span>}
-        </Container>
+        </section>
       </footer>
     </>
   );

@@ -1,6 +1,12 @@
 import Moment from "react-moment";
+import classnames from "classnames/bind";
+import { Heading, Text } from "@cockroachlabs/ui-components";
 
 import type { Statement } from "../importsSlice";
+
+import styles from "./Statements.module.scss";
+
+const cx = classnames.bind(styles);
 
 interface StatementsSummaryProps {
   statements: Statement[];
@@ -69,6 +75,7 @@ export const StatementsSummary: React.FC<StatementsSummaryProps> = (props) => {
 
   var totalTime = 0;
   var totalUncatFixes = numDanger - numNoIssueUnimplemented - numMissingUser;
+  //TODO: still need to convert all this into a modal
   const estimatedTimeList = (<ul>
     {unimplementedIssueCountArr.map(([issue, count], idx) => {
       const estimate = estimatedEffort[issue];
@@ -89,15 +96,20 @@ export const StatementsSummary: React.FC<StatementsSummaryProps> = (props) => {
   </ul>)
 
   return (
-    <ul>
-      <li>{props.statements.length} statements found.</li>
-      <li style={numDanger > 0 ? {color: 'red'}: {}}>{numDanger} fixes required.
-        {totalTime > 0 ? <>
-          &nbsp;Estimated fix time: <Moment date={new Date(Date.now() - totalTime)} fromNow ago/>.
-        </>: ''}</li>
-      {estimatedTimeList}
-      <li style={numInfo > 0 ? {color: 'blue'} : {}}>{numInfo} optional audits.</li>
-    </ul>
+    <section className={cx("statements-stats")}>
+      <div className={cx("statement-stat")}>
+        <Heading type="h1" className={cx("statements-heading")}>{props.statements.length}</Heading>
+        <Text type="body-strong">Statements Total</Text>
+      </div>
+      <div className={cx("statement-stat")}>
+        <Heading type="h1" className={cx("statements-heading", "fixes-required")}>{numDanger}</Heading>
+        <Text type="body-strong">Fixes Required</Text>
+      </div>
+      <div className={cx("statement-stat")}>
+        <Heading type="h1" className={cx("statements-heading")}>{numInfo}</Heading>
+        <Text type="body-strong">Optional Audits</Text>
+      </div>
+    </section>
   )
 }
 

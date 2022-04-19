@@ -1,0 +1,7 @@
+@import "~@cockroachlabs/design-tokens/dist/web/tokens";
+
+.horizontal-rule {
+  border-top: 1px solid $color-core-neutral-5;
+  height: 0;
+  width: 100%;
+}
