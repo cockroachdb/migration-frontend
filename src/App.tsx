@@ -22,7 +22,7 @@ import axios from 'axios';
 
 
 const baseURL = (): string => {
-  return window.location.protocol + "//" + window.location.hostname + ":5050/";
+  return window.location.protocol + "//" + window.location.hostname.replace("migration-frontend", "migration-backend") + ":5050/";
 }
 
 interface Import {
