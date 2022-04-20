@@ -25,6 +25,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
+    "start-prod": "BASE_URL=https://migration-frontend.crdb.dev/ react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"

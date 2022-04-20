@@ -21,6 +21,10 @@ import { useNavigate, BrowserRouter, Route, Routes } from 'react-router-dom';
 import axios from 'axios';
 
 
+const baseURL = (): string => {
+  return window.location.protocol + "//" + window.location.hostname + ":5050/";
+}
+
 interface Import {
   id: string;
   unix_nano: number;
@@ -69,6 +73,7 @@ interface FindAndReplaceArgs {
   isRegex: boolean;  
 }
 
+
 const ImportApp = (props: ImportAppProps) => {
   const [state, setState] = React.useState<ImportAppState>({
     loaded: false,
@@ -102,7 +107,7 @@ const ImportApp = (props: ImportAppProps) => {
 
   const refresh = () => {
     setState({...state, loaded: false});
-    axios.get<Import>("http://" + window.location.hostname + ":5050/get", { params: { 'id': props.id } }).then(
+    axios.get<Import>(baseURL() + "get", { params: { 'id': props.id } }).then(
       response => {
         setState(supplyRefs({...state, loaded: true, data: response.data}));
       }
@@ -120,7 +125,7 @@ const ImportApp = (props: ImportAppProps) => {
   const handleSubmit = () => {
     setState({...state, loaded: false});
     axios.post<Import>(
-      "http://" + window.location.hostname + ":5050/put",
+      baseURL() + "put",
       state.data,
     ).then(
       response => {
@@ -141,7 +146,7 @@ const ImportApp = (props: ImportAppProps) => {
 
   const handleFixSequence = (statementIdx: number, issueIdentifier: string) => {
     axios.post<ImportStatement>(
-      "http://" + window.location.hostname + ":5050/fix_sequence",
+      baseURL() + "fix_sequence",
       {
         statement: state.data.import_metadata.statements[statementIdx],
         id: issueIdentifier,
@@ -550,7 +555,7 @@ function SQLExecDialog(props: {show: boolean, onHide: () => void, text: string, 
 
   const handleExecute = () => {
     axios.post<SQLExecResults>(
-      "http://" + window.location.hostname + ":5050/sql",
+      baseURL() + "/sql",
       {database: props.database, sql: st.text},
     ).then(
       response => {
@@ -850,7 +855,7 @@ function Home(props: {setID: (s: string) => void}) {
     formData.append("file", inputRef.current.files[0]);
     formData.append("id", state.uploadedFileName);
     axios.post<Import>(
-      "http://" + window.location.hostname + ":5050/upload",
+      baseURL() + "upload",
       formData,
       {
         headers: { "Content-Type": "multipart/form-data" },
