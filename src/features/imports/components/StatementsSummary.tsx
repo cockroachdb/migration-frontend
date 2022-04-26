@@ -1,4 +1,4 @@
-import Moment from "react-moment";
+//import Moment from "react-moment";
 import classnames from "classnames/bind";
 import { Heading, Text } from "@cockroachlabs/ui-components";
 
@@ -12,7 +12,7 @@ interface StatementsSummaryProps {
   statements: Statement[];
 }
 
-const estimatedEffort: Record<string, { issue: string; estimate: number; }> = {
+/*const estimatedEffort: Record<string, { issue: string; estimate: number; }> = {
   '17511': {
     issue: 'stored functions/procedures',
     estimate: 1000 * 60 * 60 * 24 * 7,
@@ -33,15 +33,17 @@ const estimatedEffort: Record<string, { issue: string; estimate: number; }> = {
     issue: 'trigger',
     estimate:  1000 * 60 * 60 * 24 * 7,
   }
-};
+};*/
 
 export const StatementsSummary: React.FC<StatementsSummaryProps> = (props) => {
   var numDanger = 0;
   var numInfo = 0;
 
   const unimplementedIssueCount = new Map<string, number>();
+  /*
   var numNoIssueUnimplemented = 0;
   var numMissingUser = 0;
+  */
   const re = /issue-v\/([0-9]*)/i;
 
   props.statements.forEach((statement) => {
@@ -55,16 +57,16 @@ export const StatementsSummary: React.FC<StatementsSummaryProps> = (props) => {
       } else {
         numDanger++;
         if (issue.type === "unimplemented") {
-            const match = issue.text.match(re);
-            if (match != null) {
-              const issue = match[1];
-              const curr = unimplementedIssueCount.get(issue);
-              unimplementedIssueCount.set(issue, curr != null ? curr + 1: 1);
-            } else {
-              numNoIssueUnimplemented++;
-            }
+          const match = issue.text.match(re);
+          if (match != null) {
+            const issue = match[1];
+            const curr = unimplementedIssueCount.get(issue);
+            unimplementedIssueCount.set(issue, curr != null ? curr + 1: 1);
+          } else {
+            //numNoIssueUnimplemented++;
+          }
         } else if (issue.type === "missing_user") {
-            numMissingUser++;
+          //numMissingUser++;
         }
       }
     });
@@ -73,9 +75,10 @@ export const StatementsSummary: React.FC<StatementsSummaryProps> = (props) => {
   const unimplementedIssueCountArr = Array.from(unimplementedIssueCount);
   unimplementedIssueCountArr.sort();
 
+  /*
+  //TODO: still need to convert all this into a modal
   var totalTime = 0;
   var totalUncatFixes = numDanger - numNoIssueUnimplemented - numMissingUser;
-  //TODO: still need to convert all this into a modal
   const estimatedTimeList = (<ul>
     {unimplementedIssueCountArr.map(([issue, count], idx) => {
       const estimate = estimatedEffort[issue];
@@ -94,6 +97,7 @@ export const StatementsSummary: React.FC<StatementsSummaryProps> = (props) => {
     {numMissingUser > 0 ? <li>{numMissingUser} statements with missing user/role in database.</li> : ''}
     {totalUncatFixes > 0 ? <li>{totalUncatFixes} uncategorised items.</li>: ''}
   </ul>)
+  */
 
   return (
     <section className={cx("statements-stats")}>
