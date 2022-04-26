@@ -67,8 +67,9 @@ export const importsSlice = createSlice({
 
       statementsAdapter.setMany(theImport.statements, modifiedStatements);
     },
-    insertStatement(state, action: PayloadAction<{ importId: string, index: number}>) {
+    insertStatement(state, action: PayloadAction<{ importId: string, index: number, statement?: string}>) {
       const { importId, index } = action.payload;
+      const cockroachStatement = action.payload.statement ?? "";
 
       const theImport = state.entities[importId];
       if (!theImport) {
@@ -79,7 +80,7 @@ export const importsSlice = createSlice({
         importId: importId,
         id: nanoid(),
         original: "-- newly added statement",
-        cockroach: "",
+        cockroach: cockroachStatement,
         deleted: false,
         issues: [],
       };
@@ -89,7 +90,35 @@ export const importsSlice = createSlice({
         statement.id,
         ...nextState.ids.slice(index, nextState.ids.length - 1),
       ];
-    }
+    },
+    setStatementText(state, action: PayloadAction<{ statement: Statement, original?: string, cockroach?: string }>) {
+      const { statement, original, cockroach } = action.payload;
+      const theImport = state.entities[statement.importId];
+      if (!theImport) {
+        return;
+      }
+
+      const modifiedStatement: Statement = {
+        ...statement,
+        original: original || statement.original,
+        cockroach: cockroach || statement.cockroach,
+      }
+
+      statementsAdapter.setOne(theImport.statements, modifiedStatement);
+    },
+    clearStatementIssuesByType(state, action: PayloadAction<{ statement: Statement, issueType: string }>) {
+      const { statement, issueType } = action.payload;
+      const theImport = state.entities[statement.importId];
+      if (!theImport) {
+        return;
+      }
+
+      const modifiedStatement = {
+        ...statement,
+        issues: statement.issues.filter(issue => issue.type !== issueType),
+      };
+      statementsAdapter.setOne(theImport.statements, modifiedStatement);
+    },
   },
 });
 

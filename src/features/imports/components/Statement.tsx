@@ -1,25 +1,29 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Row, Col, Button, ButtonGroup } from 'react-bootstrap';
 
 import type { ImportIssue } from "../../../common/import";
-import { importsSlice, Statement as StatementType } from "../importsSlice";
+import { getSelectorsForImportId, importsSelectors, importsSlice } from "../importsSlice";
 import { modalSlice } from "../../modals/modalSlice";
-import { useAppDispatch } from "../../../app/hooks";
+import { useAppDispatch, useAppSelector } from "../../../app/hooks";
+import { useAddUser } from "../hooks";
 
 interface StatementProps {
-  statement: StatementType;
   idx: number;
-  database: string;
+  statementId: string;
+  importId: string;
   callbacks: {
     handleFixSequence: (statementIdx: number, issueIdentifier: string) => void;
-    handleTextAreaChange: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
     setActiveStatement: () => void;
-    handleAddUser: (user: string) => void;
   }
 }
 
 export const Statement = React.forwardRef<HTMLTextAreaElement, StatementProps>((props, ref) => {
-  const statement = props.statement;
+  const { importId, statementId } = props;
+  const thisImport = useAppSelector((state) => importsSelectors.selectById(state, importId));
+  const statementSelectors = useAppSelector((state) => getSelectorsForImportId(state, importId));
+  const statement = useAppSelector((state) => statementSelectors!.selectById(state, statementId))!;
+
+  const [ crdbStmt, setCrdbStmt ] = useState(statement?.cockroach || "");
 
   const colorForIssue = (issues: ImportIssue[]) => {
     if (issues == null || issues.length === 0) {
@@ -61,6 +65,30 @@ export const Statement = React.forwardRef<HTMLTextAreaElement, StatementProps>((
     dispatch(modalSlice.actions.showRawSql(statement.cockroach));
   }, [ dispatch, statement.cockroach ]);
 
+  const onAddUser = useAddUser();
+
+  // Publish statement changes when focus leaves the <textarea>
+  const onBlur = useCallback(
+    () => dispatch(
+      importsSlice.actions.setStatementText({
+        statement: statement,
+        cockroach: crdbStmt,
+      })
+    ),
+    [ dispatch, crdbStmt, statement ],
+  );
+
+  // Overwrite the local statement whenever the <textarea> changes
+  const onChange = useCallback((event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setCrdbStmt(event.target.value);
+  }, [setCrdbStmt]);
+
+  // Overwrite the local statement if the representation in the store changes
+  useEffect(
+    () => setCrdbStmt(statement.cockroach),
+    [ statement.cockroach, setCrdbStmt ]
+  );
+
   const onFixSequence = (statementIdx: number, issueIdentifier: string) =>
     () => props.callbacks.handleFixSequence(statementIdx, issueIdentifier)
 
@@ -94,7 +122,7 @@ export const Statement = React.forwardRef<HTMLTextAreaElement, StatementProps>((
                 <Button variant="outline-info" onClick={onFixSequence(props.idx, issue.id)}>Make UUID</Button>
               ) : ''}
               {issue.type === "missing_user" ? (
-                <Button variant="outline-info" onClick={() => props.callbacks.handleAddUser(issue.id)}>Add user "{issue.id}"</Button>
+                <Button variant="outline-info" onClick={() => onAddUser(issue.id, props.idx, statement.importId, statement)}>Add user "{issue.id}"</Button>
               ) : ''}
             </li>
           )) : ''}
@@ -102,10 +130,11 @@ export const Statement = React.forwardRef<HTMLTextAreaElement, StatementProps>((
         <textarea
           className="form-control"
           id={'ta' + props.idx}
-          value={statement.deleted ? '' : statement.cockroach}
+          value={statement.deleted ? '' : crdbStmt}
           ref={ref}
           placeholder={statement.deleted ? '-- statement ignored' : statement.cockroach}
-          onChange={props.callbacks.handleTextAreaChange}
+          onBlur={onBlur}
+          onChange={onChange}
           onFocus={() => props.callbacks.setActiveStatement()}
           rows={statement.cockroach.split('\n').length + 1}
         />
@@ -115,7 +144,7 @@ export const Statement = React.forwardRef<HTMLTextAreaElement, StatementProps>((
             <Button variant="outline-primary" onClick={onInsertAbove}>Insert Before</Button>
             <Button variant="outline-primary" onClick={onInsertBelow}>Insert After</Button>
             <Button variant="outline-secondary" onClick={toggleDelete}>{statement.deleted ? "Restore" : "Delete"}</Button>
-            <Button variant="outline-primary" onClick={showExecuteModal} disabled={props.database === ""}>Execute</Button>
+            <Button variant="outline-primary" onClick={showExecuteModal} disabled={!thisImport || thisImport.database === ""}>Execute</Button>
           </ButtonGroup>
         </p>
       </Col>
