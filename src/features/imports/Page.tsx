@@ -1,4 +1,4 @@
-import { useEffect, useState, createRef } from "react";
+import { useEffect, useState, createRef, useCallback } from "react";
 import classnames from "classnames/bind";
 import axios from "axios";
 import { saveAs } from 'file-saver';
@@ -66,19 +66,19 @@ export const ImportPage = (props: ImportPageProps) => {
     return data;
   }
 
-  const refresh = () => {
-    setState({...state, loaded: false});
+  const refresh = useCallback(() => {
+    setState(state => ({...state, loaded: false}));
     axios.get<Import>("http://" + window.location.hostname + ":5050/get", { params: { 'id': props.id } }).then(
       response => {
         dispatch(importsSlice.actions.importAdded(response.data));
-        setState(supplyRefs({...state, loaded: true, data: response.data}));
+        setState(state => supplyRefs({...state, loaded: true, data: response.data}));
       }
     )
-  }
+  }, [dispatch, props.id]);
 
   useEffect(() => {
     refresh();
-  }, [props.id])
+  }, [props.id, refresh])
 
   const undoAll = () => refresh();
 
