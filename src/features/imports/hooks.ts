@@ -2,16 +2,10 @@ import { useCallback } from "react";
 import { useDispatch } from "react-redux";
 import { importsSlice, Statement } from "./importsSlice";
 
-type AddUserOptions = {
-  importId: string,
-  index: number,
-  username: string,
-};
-
 export function useAddUser() {
   const dispatch = useDispatch();
 
-  return useCallback((username: string, index: number, importId: string, statement?: Statement, ) => {
+  return useCallback((username: string, index: number, importId: string, statement?: Statement) => {
     dispatch(
       importsSlice.actions.insertStatement({
         importId: importId,

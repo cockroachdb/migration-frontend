@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { Row, Col, Button, ButtonGroup } from 'react-bootstrap';
 
 import type { ImportIssue } from "../../../common/import";
-import { getSelectorsForImportId, importsSelectors, importsSlice, Statement as StatementType } from "../importsSlice";
+import { getSelectorsForImportId, importsSelectors, importsSlice } from "../importsSlice";
 import { modalSlice } from "../../modals/modalSlice";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { useAddUser } from "../hooks";
@@ -75,7 +75,7 @@ export const Statement = React.forwardRef<HTMLTextAreaElement, StatementProps>((
         cockroach: crdbStmt,
       })
     ),
-    [ dispatch, crdbStmt ]
+    [ dispatch, crdbStmt, statement ],
   );
 
   // Overwrite the local statement whenever the <textarea> changes
